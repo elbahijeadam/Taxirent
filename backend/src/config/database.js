@@ -221,11 +221,11 @@ if (isNew) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   db.exec('BEGIN');
-  insertCar.run(uuidv4(), 'Skoda',  'Octavia',     2018, 'Gris Vert', 'SK-001-OCT', 'sedan',    'manual',    'diesel',   5, 4, 0, 0, 'Berline Skoda Octavia 1.6 TDI.',  '[]', '[]', 'Paris');
-  insertCar.run(uuidv4(), 'Skoda',  'Kodiaq',      2020, 'Noir',      'SK-002-KOD', 'suv',      'automatic', 'petrol',   5, 5, 0, 0, 'SUV Skoda Kodiaq 1.5 TSI E85.',   '[]', '[]', 'Paris');
-  insertCar.run(uuidv4(), 'Toyota', 'Corolla 180', 2020, 'Blanc',     'TY-001-C18', 'hybrid',   'automatic', 'hybrid',   5, 4, 0, 0, 'Toyota Corolla hybride 180ch.',    '[]', '[]', 'Lyon');
-  insertCar.run(uuidv4(), 'Toyota', 'Corolla 122', 2019, 'Blanc',     'TY-002-C12', 'hybrid',   'automatic', 'hybrid',   5, 4, 0, 0, 'Toyota Corolla hybride 122ch.',    '[]', '[]', 'Lyon');
-  insertCar.run(uuidv4(), 'Tesla',  'Model Y',     2024, 'Noir',      'TS-001-MY',  'electric', 'automatic', 'electric', 5, 5, 0, 0, 'Tesla Model Y 100% électrique.',   '[]', '[]', 'Marseille');
+  insertCar.run(uuidv4(), 'Skoda',  'Octavia',     2018, 'Gris Vert', 'SK-001-OCT', 'sedan',    'manual',    'diesel',   5, 4,  55, 800,  'Berline Skoda Octavia 1.6 TDI, idéale pour les déplacements professionnels. Économique et spacieuse.',  '["Climatisation","GPS","Bluetooth","Régulateur de vitesse"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Skoda',  'Kodiaq',      2020, 'Noir',      'SK-002-KOD', 'suv',      'automatic', 'petrol',   5, 5,  80, 1200, 'SUV Skoda Kodiaq 1.5 TSI, grand gabarit pour usage intensif ou transport de matériel.',   '["Climatisation","GPS","Bluetooth","Caméra de recul","Toit panoramique"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Toyota', 'Corolla 180', 2020, 'Blanc',     'TY-001-C18', 'hybrid',   'automatic', 'hybrid',   5, 4,  65, 900,  'Toyota Corolla hybride 180ch, faible consommation et confort optimal pour longues distances.',    '["Climatisation","GPS","Bluetooth","Hybride rechargeable","Lane assist"]', '[]', 'Lyon');
+  insertCar.run(uuidv4(), 'Toyota', 'Corolla 122', 2019, 'Blanc',     'TY-002-C12', 'hybrid',   'automatic', 'hybrid',   5, 4,  58, 800,  'Toyota Corolla hybride 122ch, alliance de sobriété et de fiabilité pour une utilisation quotidienne.',    '["Climatisation","GPS","Bluetooth","Hybride","Écran tactile"]', '[]', 'Lyon');
+  insertCar.run(uuidv4(), 'Tesla',  'Model Y',     2024, 'Noir',      'TS-001-MY',  'electric', 'automatic', 'electric', 5, 5, 110, 1500, 'Tesla Model Y 100% électrique, autonomie 500km, recharge rapide. Le summum de la technologie.',   '["Autopilot","GPS","Écran 15 pouces","Recharge rapide","Climatisation","Caméras 360°"]', '[]', 'Marseille');
   db.exec('COMMIT');
 
   console.log('SQLite database initialised with schema and seed data.');
@@ -265,6 +265,15 @@ function runMigrations() {
   // Auto-approve admins, auto-verify admins and previously approved users
   try { db.exec("UPDATE users SET status = 'approved' WHERE role = 'admin' AND status = 'pending'"); } catch {}
   try { db.exec("UPDATE users SET email_verified = 1, phone_verified = 1 WHERE role = 'admin' OR status = 'approved'"); } catch {}
+
+  // Fix car prices if they were seeded at 0
+  try {
+    db.exec("UPDATE cars SET price_per_day = 55,  deposit_amount = 800  WHERE make = 'Skoda'  AND model = 'Octavia'     AND price_per_day = 0");
+    db.exec("UPDATE cars SET price_per_day = 80,  deposit_amount = 1200 WHERE make = 'Skoda'  AND model = 'Kodiaq'      AND price_per_day = 0");
+    db.exec("UPDATE cars SET price_per_day = 65,  deposit_amount = 900  WHERE make = 'Toyota' AND model = 'Corolla 180' AND price_per_day = 0");
+    db.exec("UPDATE cars SET price_per_day = 58,  deposit_amount = 800  WHERE make = 'Toyota' AND model = 'Corolla 122' AND price_per_day = 0");
+    db.exec("UPDATE cars SET price_per_day = 110, deposit_amount = 1500 WHERE make = 'Tesla'  AND model = 'Model Y'     AND price_per_day = 0");
+  } catch {}
 
   // OTP table
   try {
