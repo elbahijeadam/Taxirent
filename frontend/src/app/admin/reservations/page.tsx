@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -82,7 +82,7 @@ function NoteModal({ onConfirm, onCancel, action }: NoteModalProps) {
   );
 }
 
-export default function AdminReservationsPage() {
+function AdminReservationsContent() {
   const searchParams = useSearchParams();
 
   const [items,   setItems]   = useState<any[]>([]);
@@ -317,5 +317,13 @@ export default function AdminReservationsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminReservationsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-16"><div className="w-8 h-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" /></div>}>
+      <AdminReservationsContent />
+    </Suspense>
   );
 }

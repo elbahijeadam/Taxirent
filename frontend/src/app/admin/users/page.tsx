@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -28,7 +28,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -223,5 +223,13 @@ export default function AdminUsersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-16"><div className="w-8 h-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" /></div>}>
+      <AdminUsersContent />
+    </Suspense>
   );
 }
