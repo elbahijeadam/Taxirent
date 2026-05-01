@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment files (contiennent tes mots de passe)
+.env
+.env.local
+.env.production
+
+# Build
+.next/
+dist/
+build/
+
+# Database
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Uploads utilisateurs
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

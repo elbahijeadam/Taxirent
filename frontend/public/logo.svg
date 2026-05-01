@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44" fill="none" role="img" aria-label="Taxirent">
+  <!-- Car icon -->
+  <g transform="translate(0, 4)">
+    <!-- Body -->
+    <rect x="2" y="18" width="36" height="13" rx="3" fill="#e53e3e"/>
+    <!-- Roof -->
+    <path d="M8 18 L12 8 L28 8 L32 18Z" fill="#e53e3e"/>
+    <!-- Windshields -->
+    <path d="M13 16 L15 10 L25 10 L27 16Z" fill="#1a1a2e" opacity="0.5"/>
+    <!-- Wheels -->
+    <circle cx="10" cy="31" r="5" fill="#1a1a2e"/>
+    <circle cx="10" cy="31" r="2.5" fill="#e53e3e"/>
+    <circle cx="30" cy="31" r="5" fill="#1a1a2e"/>
+    <circle cx="30" cy="31" r="2.5" fill="#e53e3e"/>
+    <!-- Stripe -->
+    <rect x="2" y="22" width="36" height="2" fill="white" opacity="0.25"/>
+  </g>
+  <!-- Brand name -->
+  <text x="46" y="30" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="22" letter-spacing="1" fill="white">TAXI</text>
+  <text x="105" y="30" font-family="Inter, Arial, sans-serif" font-weight="300" font-size="22" letter-spacing="1" fill="#e53e3e">RENT</text>
+</svg>
