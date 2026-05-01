@@ -1,0 +1,11 @@
+{
+  "name": "taxirent-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "postinstall": "npm --prefix backend install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
