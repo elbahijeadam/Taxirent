@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/database');
 const { createOtp, verifyOtp } = require('../services/otpService');
-const { sendOtpEmail, sendOtpSms } = require('../services/emailService');
+const { sendOtpEmail, sendOtpSms, SMS_READY } = require('../services/emailService');
 
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -94,6 +94,12 @@ const verifyEmail = async (req, res) => {
 
   await query('UPDATE users SET email_verified = 1 WHERE id = $1', [req.user.id]);
   console.log(`[AUTH FLOW] userId=${req.user.id} step=email_verified`);
+
+  if (!SMS_READY) {
+    await query('UPDATE users SET phone_verified = 1 WHERE id = $1', [req.user.id]);
+    console.log(`[AUTH FLOW] userId=${req.user.id} step=phone_auto_verified (no SMS provider)`);
+    return res.json({ success: true, next: 'done' });
+  }
 
   const phoneCode = await createOtp(req.user.id, 'phone');
   await sendOtpSms({ to: req.user.phone, firstName: req.user.first_name, code: phoneCode }).catch(() => {});

@@ -206,4 +206,6 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
   });
 };
 
-module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail };
+const SMS_READY = !!twilioClient;
+
+module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, SMS_READY };
