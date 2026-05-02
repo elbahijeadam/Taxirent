@@ -31,7 +31,8 @@ const transporter = SMTP_READY
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 async function sendMail({ to, subject, html, type, userId, reservationId, attachments }) {
-  if (!transporter) throw new Error('SMTP not configured');
+  if (!transporter) { console.error('[EMAIL] SMTP non configuré — variables manquantes'); throw new Error('SMTP not configured'); }
+  console.log(`[EMAIL] Tentative envoi à ${to} | SMTP: ${process.env.SMTP_HOST} | User: ${process.env.SMTP_USER}`);
 
   const info = await transporter.sendMail({
     from: process.env.EMAIL_FROM || 'Car Rental <noreply@carrental.com>',
