@@ -1,212 +1,257 @@
 'use strict';
 
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+const fmt = (d) =>
+  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '___________';
 
-const formatPrice = (n) =>
-  parseFloat(n || 0).toFixed(2).replace('.', ',') + ' €';
+const fmtLong = (d) =>
+  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '___________';
 
 const REASON_LABELS = {
   engine_failure: 'Panne moteur',
-  accident: 'Accident de la route',
-  body_damage: 'Dommages carrosserie',
+  accident:       'Accident de la route',
+  body_damage:    'Dommages carrosserie',
 };
 
+const field = (label, value) => `
+  <tr>
+    <td class="label">${label}</td>
+    <td class="value">${value || '___________'}</td>
+  </tr>`;
+
 function generateContractHtml({ reservation, user, car }) {
-  const refId = reservation.id.slice(0, 8).toUpperCase();
-  const reason = REASON_LABELS[reservation.reason] || reservation.reason || 'Non précisé';
-  const pickupTime = reservation.pickup_time || '09:00';
-  const returnTime = reservation.return_time || '18:00';
+  const reason        = REASON_LABELS[reservation.reason] || reservation.reason || '___________';
+  const lieuCause     = [reservation.vehicle_location, reason].filter(Boolean).join(' – ');
+  const depositAmount = parseFloat(reservation.deposit_amount || 1000);
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Contrat de location — Réf. ${refId}</title>
+<title>Contrat de location taxi relais</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a202c; background: #fff; }
-  .page { max-width: 800px; margin: 0 auto; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #e53e3e; padding-bottom: 20px; margin-bottom: 30px; }
-  .logo { font-size: 26px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
-  .logo span { color: #e53e3e; }
-  .ref-box { text-align: right; }
-  .ref-box .ref { font-size: 18px; font-weight: 700; color: #1a1a2e; }
-  .ref-box .date { font-size: 12px; color: #718096; margin-top: 4px; }
-  .badge { display: inline-block; background: #e53e3e; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
-  h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #718096; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-  .section { margin-bottom: 24px; }
-  .section-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
-  .field { margin-bottom: 10px; }
-  .field:last-child { margin-bottom: 0; }
-  .field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #a0aec0; display: block; margin-bottom: 2px; }
-  .field value { font-size: 13px; color: #1a202c; font-weight: 500; }
-  table.price { width: 100%; border-collapse: collapse; }
-  table.price td { padding: 8px 0; font-size: 13px; }
-  table.price td:last-child { text-align: right; font-weight: 600; }
-  table.price tr.total td { font-size: 15px; font-weight: 700; color: #e53e3e; border-top: 2px solid #e2e8f0; padding-top: 12px; }
-  .conditions { background: #fff8f0; border: 1px solid #fbd38d; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
-  .conditions h2 { border-bottom-color: #fbd38d; color: #975a16; }
-  .conditions p { font-size: 12px; color: #744210; line-height: 1.7; margin-bottom: 8px; }
-  .conditions p:last-child { margin-bottom: 0; }
-  .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
-  .sig-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
-  .sig-box .title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #718096; margin-bottom: 8px; }
-  .sig-line { border-bottom: 1px solid #a0aec0; margin-top: 60px; }
-  .sig-name { font-size: 11px; color: #a0aec0; margin-top: 4px; }
-  .footer { text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; }
-  .highlight { color: #e53e3e; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5px;
+    color: #000;
+    background: #fff;
+    line-height: 1.55;
+  }
+  .page { max-width: 750px; margin: 0 auto; padding: 36px 44px; }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .header p { font-size: 12px; line-height: 1.6; }
+
+  /* ── Conditions text ── */
+  .conditions { margin-bottom: 24px; font-size: 12px; line-height: 1.65; }
+  .conditions p { margin-bottom: 8px; }
+  .conditions strong { font-weight: 700; }
+  .conditions .caps { font-weight: 700; text-transform: uppercase; font-size: 12px; }
+
+  /* ── Data table ── */
+  .data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .data-table td { padding: 3px 0; vertical-align: top; }
+  .data-table td.label {
+    font-weight: 700;
+    width: 52%;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+  .data-table td.value {
+    font-size: 12px;
+    border-bottom: 1px solid #888;
+    min-width: 180px;
+  }
+  .data-table tr.spacer td { height: 8px; border: none; }
+
+  /* ── Section heading ── */
+  .section-title {
+    font-weight: 900;
+    font-size: 13px;
+    text-decoration: underline;
+    margin: 18px 0 6px;
+    text-transform: uppercase;
+  }
+
+  /* ── Bold warning ── */
+  .warning {
+    font-weight: 900;
+    font-size: 12.5px;
+    margin: 14px 0 6px;
+    text-transform: uppercase;
+  }
+
+  /* ── Signature section ── */
+  .sig-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+  .car-sketch {
+    flex-shrink: 0;
+    width: 160px;
+  }
+  .sig-cols {
+    display: flex;
+    flex: 1;
+    gap: 40px;
+    padding-top: 8px;
+  }
+  .sig-col { flex: 1; text-align: center; }
+  .sig-col .sig-title { font-size: 12px; margin-bottom: 50px; }
+  .sig-col .sig-line { border-bottom: 1px solid #000; margin-bottom: 4px; }
+
+  /* ── Return section ── */
+  .return-section { margin-top: 10px; font-size: 12px; }
+  .return-section p { margin-bottom: 8px; }
+  .return-line {
+    display: inline-block;
+    width: 300px;
+    border-bottom: 1px solid #888;
+    margin-left: 6px;
+  }
+
   @media print {
-    .page { padding: 20px; }
-    body { font-size: 12px; }
+    .page { padding: 18px 24px; }
+    body { font-size: 11.5px; }
   }
 </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- Header -->
+  <!-- ══ EN-TÊTE ══ -->
   <div class="header">
-    <div>
-      <div class="logo">Auto<span>Rent</span></div>
-      <div style="font-size:12px;color:#718096;margin-top:4px;">Location de véhicules professionnelle</div>
-    </div>
-    <div class="ref-box">
-      <div class="badge">Contrat de location</div>
-      <div class="ref">Réf. ${refId}</div>
-      <div class="date">Établi le ${formatDate(new Date().toISOString())}</div>
-    </div>
+    <h1>Contrat de location taxi relais</h1>
+    <p>
+      TAXI RENT<br>
+      7 Allée de Lille<br>
+      91170 Viry-Chatillon<br>
+      Enregistré au RCS d'Evry<br>
+      location de véhicule courte durée<br>
+      Siren 921300190
+    </p>
   </div>
 
-  <!-- Parties -->
-  <div class="grid-2">
-    <div class="section">
-      <h2>Le loueur</h2>
-      <div class="section-box">
-        <div class="field"><label>Société</label><value>Taxirent SARL</value></div>
-        <div class="field"><label>Adresse</label><value>7 Allée de Lille, 91170 Viry-Châtillon</value></div>
-        <div class="field"><label>SIRET</label><value>En cours d'immatriculation</value></div>
-        <div class="field"><label>Téléphone</label><value>+33 6 06 76 35 89</value></div>
-      </div>
-    </div>
-    <div class="section">
-      <h2>Le locataire</h2>
-      <div class="section-box">
-        <div class="field"><label>Nom complet</label><value>${user.first_name} ${user.last_name}</value></div>
-        ${user.username ? `<div class="field"><label>Identifiant</label><value>${user.username}</value></div>` : ''}
-        <div class="field"><label>Email</label><value>${user.email}</value></div>
-        ${user.phone ? `<div class="field"><label>Téléphone</label><value>${user.phone}</value></div>` : ''}
-        ${user.commune ? `<div class="field"><label>Commune</label><value>${user.commune}</value></div>` : ''}
-        ${user.driver_license_number ? `<div class="field"><label>N° permis</label><value>${user.driver_license_number}</value></div>` : ''}
-        ${user.professional_card_number ? `<div class="field"><label>Carte professionnelle</label><value>${user.professional_card_number}</value></div>` : ''}
-      </div>
-    </div>
-  </div>
-
-  <!-- Vehicle -->
-  <div class="section">
-    <h2>Véhicule loué</h2>
-    <div class="section-box">
-      <div class="grid-2" style="margin-bottom:0;">
-        <div>
-          <div class="field"><label>Marque / Modèle</label><value>${car.make} ${car.model}</value></div>
-          <div class="field"><label>Année</label><value>${car.year}</value></div>
-          <div class="field"><label>Couleur</label><value>${car.color || '—'}</value></div>
-        </div>
-        <div>
-          <div class="field"><label>Immatriculation</label><value>${car.license_plate}</value></div>
-          <div class="field"><label>Catégorie</label><value>${car.category || '—'}</value></div>
-          <div class="field"><label>Transmission</label><value>${car.transmission === 'automatic' ? 'Automatique' : 'Manuelle'}</value></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rental period + reason -->
-  <div class="grid-2">
-    <div class="section">
-      <h2>Période de location</h2>
-      <div class="section-box">
-        <div class="field"><label>Prise en charge</label><value>${formatDate(reservation.start_date)} à ${pickupTime}</value></div>
-        <div class="field"><label>Restitution</label><value>${formatDate(reservation.end_date)} à ${returnTime}</value></div>
-        <div class="field"><label>Durée</label><value>${reservation.total_days} jour(s)</value></div>
-        ${reservation.pickup_location ? `<div class="field"><label>Lieu de prise en charge</label><value>${reservation.pickup_location}</value></div>` : ''}
-        ${reservation.dropoff_location ? `<div class="field"><label>Lieu de restitution</label><value>${reservation.dropoff_location}</value></div>` : ''}
-      </div>
-    </div>
-    <div class="section">
-      <h2>Motif de la location</h2>
-      <div class="section-box">
-        <div class="field"><label>Raison</label><value class="highlight">${reason}</value></div>
-        ${reservation.vehicle_location ? `<div class="field"><label>Localisation véhicule immobilisé</label><value>${reservation.vehicle_location}</value></div>` : ''}
-        ${reservation.notes ? `<div class="field"><label>Notes complémentaires</label><value>${reservation.notes}</value></div>` : ''}
-      </div>
-    </div>
-  </div>
-
-  <!-- Price -->
-  <div class="section">
-    <h2>Tarification</h2>
-    <div class="section-box">
-      <table class="price">
-        <tr>
-          <td>Tarif journalier</td>
-          <td>${formatPrice(car.price_per_day)} / jour</td>
-        </tr>
-        <tr>
-          <td>Nombre de jours</td>
-          <td>${reservation.total_days} jour(s)</td>
-        </tr>
-        <tr>
-          <td>Sous-total location</td>
-          <td>${formatPrice(reservation.total_amount)}</td>
-        </tr>
-        ${parseFloat(reservation.deposit_amount) > 0 ? `
-        <tr>
-          <td>Dépôt de garantie</td>
-          <td>${formatPrice(reservation.deposit_amount)}</td>
-        </tr>` : ''}
-        <tr class="total">
-          <td>TOTAL TTC</td>
-          <td>${formatPrice(reservation.total_amount)}</td>
-        </tr>
-      </table>
-    </div>
-  </div>
-
-  <!-- Conditions -->
+  <!-- ══ CONDITIONS ══ -->
   <div class="conditions">
-    <h2>Conditions générales de location</h2>
-    <p><strong>1. Le locataire</strong> s'engage à utiliser le véhicule en bon père de famille, à le restituer dans l'état dans lequel il l'a reçu et à respecter le code de la route.</p>
-    <p><strong>2. Carburant :</strong> Le véhicule est remis plein et doit être restitué plein. Tout manquant sera facturé au tarif en vigueur.</p>
-    <p><strong>3. Assurance :</strong> Le véhicule est assuré tous risques. La franchise en cas de sinistre responsable est de 800 €. Une couverture complémentaire peut être souscrite.</p>
-    <p><strong>4. Kilométrage :</strong> Kilométrage illimité sauf mention contraire dans les conditions particulières.</p>
-    <p><strong>5. Restitution tardive :</strong> Toute heure supplémentaire de retard sera facturée au prorata du tarif journalier.</p>
-    <p><strong>6. Documents :</strong> Le locataire certifie avoir fourni des documents authentiques et valides (permis de conduire, pièce d'identité, carte professionnelle).</p>
+    <p>Le loueur met à disposition du locataire un véhicule équipé taxi en conformité avec la réglementation en vigueur&nbsp;:
+    taximètre, lumineux, imprimante, et contrôles techniques à jour. Le véhicule est assuré par le locataire (transfert de
+    son assurance tous risques de son taxi immobilisé), il devra immédiatement signaler tout incident à son assurance
+    et au loueur.</p>
+
+    <p>Au départ de la location le locataire devra laisser un chèque de caution de <strong>${depositAmount.toLocaleString('fr-FR')}€</strong>.</p>
+
+    <p><strong>Le véhicule devra être restitué dans l'état où il a été emprunté</strong> et dans le cas contraire le loueur pourra
+    facturer les frais de remise en état du véhicule ainsi que les jours d'immobilisation du véhicule relais le cas
+    échéant. <strong>(Frais de Nettoyage forfaitaire 50€)</strong></p>
+
+    <p><strong>Le véhicule relais devra toujours être restitué plein fait</strong> et dans le cas contraire il sera facturé au locataire
+    2€/Litre manquant.</p>
+
+    <p>Le véhicule relais est loué uniquement en cas d'immobilisation du véhicule taxi du locataire.</p>
+
+    <p>Le locataire devra indiquer au loueur les raisons de l'immobilisation de son véhicule ainsi que le lieu où celui-ci
+    est visible. En cas de contrôle ou de demandes des autorités et administrations compétentes le loueur se réserve
+    la possibilité de vérifier où le véhicule du locataire est immobilisé.</p>
+
+    <p>Le locataire doit transmettre le contrat de location à la Mairie de la Commune de Stationnement.</p>
+
+    <p>La location s'entend kilométrage illimité.</p>
+
+    <p class="caps">LE LOCATAIRE S'ENGAGE A ALLER MODIFIER LES TARIFS PREFECTORAUX DE SON
+    DEPARTEMENT CHEZ JPM TAXI.</p>
   </div>
 
-  <!-- Signatures -->
-  <div class="sig-grid">
-    <div class="sig-box">
-      <div class="title">Signature du loueur</div>
-      <div style="font-size:12px;color:#4a5568;margin-bottom:4px;">Taxirent SARL</div>
-      <div class="sig-line"></div>
-      <div class="sig-name">Date et signature</div>
+  <!-- ══ VÉHICULE ══ -->
+  <table class="data-table">
+    ${field('<strong>Véhicule loué</strong>', `${car.make} ${car.model}`)}
+    ${field('<strong>Immatriculation</strong>', car.license_plate)}
+    ${field('Prix par Jour', `${parseFloat(car.price_per_day).toFixed(0)}€ Hors Taxe`)}
+    ${field('<strong>DATE DE DEBUT DU CONTRAT</strong>', fmt(reservation.start_date))}
+    ${field('<strong>DATE PREVU DE RETOUR</strong>', fmt(reservation.end_date))}
+  </table>
+
+  <!-- ══ LOCATAIRE ══ -->
+  <div class="section-title">Locataire :</div>
+  <table class="data-table">
+    ${field('NOM', `${user.first_name} ${user.last_name}`)}
+    ${field('ADRESSE', user.commune || '')}
+    ${field('PERMIS DE CONDUIRE N°', user.driver_license_number)}
+    ${field('DELIVRE LE', user.date_of_birth ? fmt(user.date_of_birth) : '')}
+    ${field('CARTE PROFESSIONNELLE N', user.professional_card_number)}
+    ${field('COMMUNE DE STATIONNEMENT DU VEHICULE IMMOBILISE', user.commune)}
+    ${field('IMMATRICULATION DU VEHICULE IMMOBILISE', '')}
+    ${field('NUMERO CONVENTIONNEMENT', user.license_number)}
+    ${field('LIEU D\'IMMOBILISATION DE VEHICULE + CAUSE', lieuCause)}
+  </table>
+
+  <p class="warning">Tous dommages sont à rembourser par le locataire</p>
+
+  <!-- ══ SIGNATURES ══ -->
+  <div class="sig-section">
+
+    <!-- Schéma véhicule -->
+    <div class="car-sketch">
+      <svg viewBox="0 0 160 260" width="160" height="260" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#000" stroke-width="1.5">
+        <!-- Carrosserie -->
+        <rect x="20" y="40" width="120" height="180" rx="18" stroke-width="2"/>
+        <!-- Pare-brise avant -->
+        <path d="M38 80 Q80 65 122 80" stroke-width="1.2"/>
+        <!-- Toit -->
+        <path d="M38 80 Q80 68 122 80 L122 140 Q80 148 38 140 Z" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <!-- Pare-brise arrière -->
+        <path d="M38 140 Q80 155 122 140" stroke-width="1.2"/>
+        <!-- Rétros -->
+        <rect x="6" y="110" width="14" height="20" rx="3"/>
+        <rect x="140" y="110" width="14" height="20" rx="3"/>
+        <!-- Roues avant -->
+        <ellipse cx="38" cy="70" rx="14" ry="20" fill="#eee"/>
+        <ellipse cx="122" cy="70" rx="14" ry="20" fill="#eee"/>
+        <!-- Roues arrière -->
+        <ellipse cx="38" cy="190" rx="14" ry="20" fill="#eee"/>
+        <ellipse cx="122" cy="190" rx="14" ry="20" fill="#eee"/>
+        <!-- Portes -->
+        <line x1="30" y1="115" x2="130" y2="115" stroke-dasharray="2 2" stroke-width="0.8"/>
+        <!-- Poignées -->
+        <rect x="58" y="97" width="12" height="4" rx="2" fill="#000" stroke="none"/>
+        <rect x="90" y="97" width="12" height="4" rx="2" fill="#000" stroke="none"/>
+        <rect x="58" y="122" width="12" height="4" rx="2" fill="#000" stroke="none"/>
+        <rect x="90" y="122" width="12" height="4" rx="2" fill="#000" stroke="none"/>
+      </svg>
     </div>
-    <div class="sig-box">
-      <div class="title">Signature du locataire</div>
-      <div style="font-size:12px;color:#4a5568;margin-bottom:4px;">${user.first_name} ${user.last_name}</div>
-      <div class="sig-line"></div>
-      <div class="sig-name">Précédé de la mention « Lu et approuvé »</div>
+
+    <!-- Colonnes signature -->
+    <div class="sig-cols">
+      <div class="sig-col">
+        <p class="sig-title">locataire</p>
+        <div class="sig-line"></div>
+        <p style="font-size:11px;color:#555;">Signature</p>
+      </div>
+      <div class="sig-col">
+        <p class="sig-title">Loueur</p>
+        <div class="sig-line"></div>
+        <p style="font-size:11px;color:#555;">Monir El Bahije</p>
+      </div>
     </div>
+
   </div>
 
-  <div class="footer">
-    Taxirent SARL — 7 Allée de Lille, 91170 Viry-Châtillon<br>
-    taxirent.contact@gmail.com — +33 6 06 76 35 89<br>
-    Contrat généré automatiquement le ${formatDate(new Date().toISOString())}
+  <!-- ══ RETOUR ══ -->
+  <div class="return-section">
+    <p>RETOUR Véhicule&nbsp;: <span class="return-line"></span></p>
+    <p>SINISTRE RESPONSABLE&nbsp;: <span class="return-line"></span></p>
+    <p>CARBURANT&nbsp;: <span class="return-line"></span></p>
   </div>
 
 </div>
