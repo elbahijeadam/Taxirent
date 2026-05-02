@@ -1,24 +1,65 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 44" fill="none" role="img" aria-label="Taxirent">
-  <!-- Car icon -->
-  <g transform="translate(0, 4)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-label="Taxi Rent">
+
+  <!-- Red taxi (left) -->
+  <g transform="translate(4, 10)">
     <!-- Body -->
-    <rect x="2" y="18" width="36" height="13" rx="3" fill="#16a34a"/>
+    <rect x="0" y="20" width="56" height="20" rx="4" fill="#e53e3e"/>
     <!-- Roof -->
-    <path d="M8 18 L12 8 L28 8 L32 18Z" fill="#16a34a"/>
+    <path d="M10 20 L16 8 L42 8 L48 20Z" fill="#e53e3e"/>
     <!-- Taxi sign on roof -->
-    <rect x="14" y="4" width="12" height="5" rx="1.5" fill="#16a34a"/>
-    <text x="15.5" y="8.5" font-family="Arial, sans-serif" font-weight="700" font-size="4" fill="white">TAXI</text>
-    <!-- Windshields -->
-    <path d="M13 16 L15 10 L25 10 L27 16Z" fill="#1a1a2e" opacity="0.5"/>
+    <rect x="20" y="3" width="18" height="7" rx="2" fill="#e53e3e" stroke="white" stroke-width="1"/>
+    <text x="23" y="9" font-family="Arial,sans-serif" font-weight="800" font-size="5" fill="white">TAXI</text>
+    <!-- Window -->
+    <path d="M18 18 L21 10 L41 10 L44 18Z" fill="white" opacity="0.25"/>
+    <!-- TAXI text on body -->
+    <text x="14" y="34" font-family="Arial,sans-serif" font-weight="800" font-size="7" fill="white">TAXI</text>
     <!-- Wheels -->
-    <circle cx="10" cy="31" r="5" fill="#1a1a2e"/>
-    <circle cx="10" cy="31" r="2.5" fill="#16a34a"/>
-    <circle cx="30" cy="31" r="5" fill="#1a1a2e"/>
-    <circle cx="30" cy="31" r="2.5" fill="#16a34a"/>
+    <circle cx="13" cy="40" r="7" fill="#1a1a2e"/>
+    <circle cx="13" cy="40" r="3.5" fill="#e53e3e"/>
+    <circle cx="43" cy="40" r="7" fill="#1a1a2e"/>
+    <circle cx="43" cy="40" r="3.5" fill="#e53e3e"/>
     <!-- Stripe -->
-    <rect x="2" y="22" width="36" height="2" fill="white" opacity="0.25"/>
+    <rect x="0" y="26" width="56" height="2" fill="white" opacity="0.2"/>
   </g>
-  <!-- Brand name -->
-  <text x="48" y="30" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="22" letter-spacing="1" fill="white">TAXI</text>
-  <text x="110" y="30" font-family="Inter, Arial, sans-serif" font-weight="300" font-size="22" letter-spacing="1" fill="#16a34a">RENT</text>
+
+  <!-- Person silhouette (center) -->
+  <g transform="translate(124, 8)">
+    <!-- Head -->
+    <circle cx="12" cy="8" r="6" fill="#1a1a2e"/>
+    <!-- Body -->
+    <rect x="7" y="14" width="10" height="18" rx="2" fill="#1a1a2e"/>
+    <!-- Left arm -->
+    <rect x="2" y="15" width="6" height="3" rx="1.5" fill="#1a1a2e" transform="rotate(-15 5 16)"/>
+    <!-- Right arm -->
+    <rect x="16" y="15" width="6" height="3" rx="1.5" fill="#1a1a2e" transform="rotate(20 19 16)"/>
+    <!-- Left leg -->
+    <rect x="7" y="30" width="5" height="14" rx="2" fill="#1a1a2e" transform="rotate(-10 9 35)"/>
+    <!-- Right leg -->
+    <rect x="12" y="30" width="5" height="14" rx="2" fill="#1a1a2e" transform="rotate(15 14 35)"/>
+  </g>
+
+  <!-- Green taxi (right) -->
+  <g transform="translate(192, 10)">
+    <!-- Body -->
+    <rect x="0" y="20" width="56" height="20" rx="4" fill="#16a34a"/>
+    <!-- Roof -->
+    <path d="M10 20 L16 8 L42 8 L48 20Z" fill="#16a34a"/>
+    <!-- Taxi sign on roof -->
+    <rect x="20" y="3" width="18" height="7" rx="2" fill="#16a34a" stroke="white" stroke-width="1"/>
+    <text x="21" y="9" font-family="Arial,sans-serif" font-weight="800" font-size="4.5" fill="white">TAXI</text>
+    <!-- Window -->
+    <path d="M18 18 L21 10 L41 10 L44 18Z" fill="white" opacity="0.25"/>
+    <!-- TAXI RENT text on body -->
+    <text x="5" y="34" font-family="Arial,sans-serif" font-weight="800" font-size="6" fill="white">TAXIRENT</text>
+    <!-- Wheels -->
+    <circle cx="13" cy="40" r="7" fill="#1a1a2e"/>
+    <circle cx="13" cy="40" r="3.5" fill="#16a34a"/>
+    <circle cx="43" cy="40" r="7" fill="#1a1a2e"/>
+    <circle cx="43" cy="40" r="3.5" fill="#16a34a"/>
+    <!-- Stripe -->
+    <rect x="0" y="26" width="56" height="2" fill="white" opacity="0.2"/>
+  </g>
+
+  <!-- TAXI RENT text (top center) -->
+  <text x="160" y="68" font-family="Arial,sans-serif" font-weight="900" font-size="14" fill="white" text-anchor="middle" letter-spacing="3">TAXI RENT</text>
 </svg>
