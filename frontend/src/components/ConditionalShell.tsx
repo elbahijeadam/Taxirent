@@ -111,8 +111,8 @@ function Footer() {
             </ul>
             <div className="text-xs text-gray-600 space-y-1.5 leading-relaxed border-t border-white/5 pt-5">
               <p>
-                <a href="mailto:contact@taxirent.com" className="text-gray-400 hover:text-white transition-colors">
-                  contact@taxirent.com
+                <a href="mailto:taxirent.contact@gmail.com" className="text-gray-400 hover:text-white transition-colors">
+                  taxirent.contact@gmail.com
                 </a>
               </p>
               <p>

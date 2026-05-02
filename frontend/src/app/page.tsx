@@ -54,7 +54,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-dark-900 via-dark-800 to-dark-700" />
         <div
           className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(ellipse at 20% 60%, #e53e3e 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, #9b2c2c 0%, transparent 50%)' }}
+          style={{ backgroundImage: 'radial-gradient(ellipse at 20% 60%, #16a34a 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, #166534 0%, transparent 50%)' }}
         />
         {/* Grid texture */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
@@ -62,14 +62,14 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 text-sm font-semibold px-4 py-2 rounded-full mb-8 border border-brand-500/25 tracking-wide">
-              ✦ Plateforme SaaS · Location professionnelle
+              ✦ Île-de-France · Véhicules équipés taxi
             </span>
             <h1 className="text-5xl lg:text-7xl font-extrabold leading-[1.08] mb-7 tracking-tight">
-              Gérez votre activité<br />
-              <span className="text-brand-500">en toute sérénité.</span>
+              Votre taxi en panne ?<br />
+              <span className="text-brand-500">Reprenez la route.</span>
             </h1>
             <p className="text-lg lg:text-xl text-gray-400 mb-10 leading-relaxed max-w-xl">
-              Taxirent centralise la vérification de documents, les réservations et les dépôts de garantie pour les professionnels de la location de véhicules.
+              Taxirent met à disposition des véhicules équipés pour les chauffeurs de taxi en Île-de-France. Réservation en ligne, vérification de documents instantanée, contrat généré automatiquement.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/auth/register" className="btn-primary text-base px-8 py-4 rounded-2xl shadow-lg shadow-brand-500/25">

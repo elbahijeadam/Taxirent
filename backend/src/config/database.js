@@ -221,11 +221,11 @@ if (isNew) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
   db.exec('BEGIN');
-  insertCar.run(uuidv4(), 'Skoda',  'Octavia',     2018, 'Gris Vert', 'SK-001-OCT', 'sedan',    'manual',    'diesel',   5, 4,  55, 800,  'Berline Skoda Octavia 1.6 TDI, idéale pour les déplacements professionnels. Économique et spacieuse.',  '["Climatisation","GPS","Bluetooth","Régulateur de vitesse"]', '[]', 'Paris');
-  insertCar.run(uuidv4(), 'Skoda',  'Kodiaq',      2020, 'Noir',      'SK-002-KOD', 'suv',      'automatic', 'petrol',   5, 5,  80, 1200, 'SUV Skoda Kodiaq 1.5 TSI, grand gabarit pour usage intensif ou transport de matériel.',   '["Climatisation","GPS","Bluetooth","Caméra de recul","Toit panoramique"]', '[]', 'Paris');
-  insertCar.run(uuidv4(), 'Toyota', 'Corolla 180', 2020, 'Blanc',     'TY-001-C18', 'hybrid',   'automatic', 'hybrid',   5, 4,  65, 900,  'Toyota Corolla hybride 180ch, faible consommation et confort optimal pour longues distances.',    '["Climatisation","GPS","Bluetooth","Hybride rechargeable","Lane assist"]', '[]', 'Lyon');
-  insertCar.run(uuidv4(), 'Toyota', 'Corolla 122', 2019, 'Blanc',     'TY-002-C12', 'hybrid',   'automatic', 'hybrid',   5, 4,  58, 800,  'Toyota Corolla hybride 122ch, alliance de sobriété et de fiabilité pour une utilisation quotidienne.',    '["Climatisation","GPS","Bluetooth","Hybride","Écran tactile"]', '[]', 'Lyon');
-  insertCar.run(uuidv4(), 'Tesla',  'Model Y',     2024, 'Noir',      'TS-001-MY',  'electric', 'automatic', 'electric', 5, 5, 110, 1500, 'Tesla Model Y 100% électrique, autonomie 500km, recharge rapide. Le summum de la technologie.',   '["Autopilot","GPS","Écran 15 pouces","Recharge rapide","Climatisation","Caméras 360°"]', '[]', 'Marseille');
+  insertCar.run(uuidv4(), 'Skoda',  'Octavia',     2018, 'Noir',      'SK-001-OCT', 'sedan',    'manual',    'diesel',   5, 4,  65, 1500, 'Berline Skoda Octavia 1.6 TDI équipée taxi. Lumignon, taximètre et séparation inclus. Idéale pour reprendre l\'activité rapidement.',  '["Équipement taxi complet","Climatisation","GPS","Bluetooth","Régulateur de vitesse"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Skoda',  'Kodiaq',      2020, 'Noir',      'SK-002-KOD', 'suv',      'automatic', 'petrol',   5, 5,  90, 1500, 'SUV Skoda Kodiaq équipé taxi, idéal pour les courses longues distances et aéroports. Grand coffre.',   '["Équipement taxi complet","Climatisation","GPS","Bluetooth","Caméra de recul"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Toyota', 'Corolla 180', 2020, 'Blanc',     'TY-001-C18', 'hybrid',   'automatic', 'hybrid',   5, 4,  75, 1500, 'Toyota Corolla hybride 180ch équipée taxi. Faible consommation pour maximiser votre rentabilité. Très fiable.',    '["Équipement taxi complet","Climatisation","GPS","Bluetooth","Hybride"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Toyota', 'Corolla 122', 2019, 'Blanc',     'TY-002-C12', 'hybrid',   'automatic', 'hybrid',   5, 4,  70, 1500, 'Toyota Corolla hybride 122ch équipée taxi. Le choix des chauffeurs professionnels parisiens. Économique et fiable.',    '["Équipement taxi complet","Climatisation","GPS","Bluetooth","Hybride"]', '[]', 'Paris');
+  insertCar.run(uuidv4(), 'Tesla',  'Model Y',     2024, 'Noir',      'TS-001-MY',  'electric', 'automatic', 'electric', 5, 5, 120, 1500, 'Tesla Model Y 100% électrique équipée taxi. Autonomie 500km, recharge rapide. Zéro émission pour circuler en ZFE.',   '["Équipement taxi complet","Autopilot","GPS","Écran 15 pouces","Recharge rapide","Climatisation"]', '[]', 'Paris');
   db.exec('COMMIT');
 
   console.log('SQLite database initialised with schema and seed data.');
@@ -268,11 +268,11 @@ function runMigrations() {
 
   // Fix car prices if they were seeded at 0
   try {
-    db.exec("UPDATE cars SET price_per_day = 55,  deposit_amount = 800  WHERE make = 'Skoda'  AND model = 'Octavia'     AND price_per_day = 0");
-    db.exec("UPDATE cars SET price_per_day = 80,  deposit_amount = 1200 WHERE make = 'Skoda'  AND model = 'Kodiaq'      AND price_per_day = 0");
-    db.exec("UPDATE cars SET price_per_day = 65,  deposit_amount = 900  WHERE make = 'Toyota' AND model = 'Corolla 180' AND price_per_day = 0");
-    db.exec("UPDATE cars SET price_per_day = 58,  deposit_amount = 800  WHERE make = 'Toyota' AND model = 'Corolla 122' AND price_per_day = 0");
-    db.exec("UPDATE cars SET price_per_day = 110, deposit_amount = 1500 WHERE make = 'Tesla'  AND model = 'Model Y'     AND price_per_day = 0");
+    db.exec("UPDATE cars SET price_per_day = 65,  deposit_amount = 1500, city = 'Paris', color = 'Noir',  description = 'Berline Skoda Octavia 1.6 TDI équipée taxi. Lumignon, taximètre et séparation inclus.'  WHERE make = 'Skoda'  AND model = 'Octavia'");
+    db.exec("UPDATE cars SET price_per_day = 90,  deposit_amount = 1500, city = 'Paris', color = 'Noir',  description = 'SUV Skoda Kodiaq équipé taxi, idéal pour les courses longues distances et aéroports.'  WHERE make = 'Skoda'  AND model = 'Kodiaq'");
+    db.exec("UPDATE cars SET price_per_day = 75,  deposit_amount = 1500, city = 'Paris', description = 'Toyota Corolla hybride 180ch équipée taxi. Faible consommation pour maximiser votre rentabilité.'  WHERE make = 'Toyota' AND model = 'Corolla 180'");
+    db.exec("UPDATE cars SET price_per_day = 70,  deposit_amount = 1500, city = 'Paris', description = 'Toyota Corolla hybride 122ch équipée taxi. Le choix des chauffeurs professionnels parisiens.'  WHERE make = 'Toyota' AND model = 'Corolla 122'");
+    db.exec("UPDATE cars SET price_per_day = 120, deposit_amount = 1500, city = 'Paris', description = 'Tesla Model Y 100% électrique équipée taxi. Autonomie 500km. Zéro émission pour circuler en ZFE.'  WHERE make = 'Tesla'  AND model = 'Model Y'");
   } catch {}
 
   // OTP table

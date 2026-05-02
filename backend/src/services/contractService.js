@@ -85,10 +85,10 @@ function generateContractHtml({ reservation, user, car }) {
     <div class="section">
       <h2>Le loueur</h2>
       <div class="section-box">
-        <div class="field"><label>Société</label><value>AutoRent SAS</value></div>
-        <div class="field"><label>Adresse</label><value>1 Avenue de la Flotte, Paris</value></div>
-        <div class="field"><label>SIRET</label><value>123 456 789 00010</value></div>
-        <div class="field"><label>Téléphone</label><value>+33 1 00 00 00 00</value></div>
+        <div class="field"><label>Société</label><value>Taxirent SARL</value></div>
+        <div class="field"><label>Adresse</label><value>7 Allée de Lille, 91170 Viry-Châtillon</value></div>
+        <div class="field"><label>SIRET</label><value>En cours d'immatriculation</value></div>
+        <div class="field"><label>Téléphone</label><value>+33 6 06 76 35 89</value></div>
       </div>
     </div>
     <div class="section">
@@ -191,7 +191,7 @@ function generateContractHtml({ reservation, user, car }) {
   <div class="sig-grid">
     <div class="sig-box">
       <div class="title">Signature du loueur</div>
-      <div style="font-size:12px;color:#4a5568;margin-bottom:4px;">AutoRent SAS</div>
+      <div style="font-size:12px;color:#4a5568;margin-bottom:4px;">Taxirent SARL</div>
       <div class="sig-line"></div>
       <div class="sig-name">Date et signature</div>
     </div>
@@ -204,8 +204,8 @@ function generateContractHtml({ reservation, user, car }) {
   </div>
 
   <div class="footer">
-    AutoRent SAS — SIRET 123 456 789 00010 — TVA FR 12 123 456 789<br>
-    1 Avenue de la Flotte, 75001 Paris — contact@autorent.fr — +33 1 00 00 00 00<br>
+    Taxirent SARL — 7 Allée de Lille, 91170 Viry-Châtillon<br>
+    taxirent.contact@gmail.com — +33 6 06 76 35 89<br>
     Contrat généré automatiquement le ${formatDate(new Date().toISOString())}
   </div>
 
