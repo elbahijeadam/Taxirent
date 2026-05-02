@@ -52,14 +52,16 @@ export default function Navbar() {
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <Image
-              src="/logo.svg"
-              alt="Taxirent"
-              width={160}
-              height={36}
-              className="h-8 w-auto"
-              priority
-            />
+            <div className="bg-white rounded-xl px-2 py-1">
+              <Image
+                src="/logo-taxirent.png"
+                alt="Taxirent"
+                width={120}
+                height={40}
+                className="h-9 w-auto"
+                priority
+              />
+            </div>
           </Link>
 
           {/* ── Desktop navigation ── */}

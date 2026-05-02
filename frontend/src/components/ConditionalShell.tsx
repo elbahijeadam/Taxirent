@@ -54,13 +54,15 @@ function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link href="/" className="inline-block mb-5">
-              <Image
-                src="/logo.svg"
-                alt="Taxirent"
-                width={150}
-                height={34}
-                className="h-8 w-auto"
-              />
+              <div className="bg-white rounded-xl px-2 py-1 inline-block">
+                <Image
+                  src="/logo-taxirent.png"
+                  alt="Taxirent"
+                  width={120}
+                  height={40}
+                  className="h-9 w-auto"
+                />
+              </div>
             </Link>
             <p className="text-sm leading-relaxed text-gray-500 max-w-xs mb-6">
               La plateforme SaaS de référence pour la gestion et la mise en relation dans le secteur de la location de véhicules professionnels.
