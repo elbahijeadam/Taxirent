@@ -39,7 +39,7 @@ const register = async (req, res) => {
     const token = generateToken(user.id);
 
     const emailCode = await createOtp(user.id, 'email');
-    await sendOtpEmail({ to: user.email, firstName: user.first_name, code: emailCode }).catch(() => {});
+    sendOtpEmail({ to: user.email, firstName: user.first_name, code: emailCode }).catch(() => {});
 
     console.log(`[AUTH FLOW] userId=${user.id} step=registered email=${user.email}`);
 
