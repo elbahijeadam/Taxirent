@@ -172,8 +172,8 @@ const getMe = async (req, res) => {
   try {
     const result = await query(
       `SELECT id, email, first_name, last_name, phone, date_of_birth, place_of_birth,
-              driver_license_number, professional_card_number, license_number, commune,
-              reason_for_immobilization, role, status, is_verified,
+              driver_license_number, driver_license_date, professional_card_number, license_number,
+              commune, address, reason_for_immobilization, role, status, is_verified,
               email_verified, phone_verified, created_at
        FROM users WHERE id = $1`,
       [req.user.id]

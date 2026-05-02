@@ -137,6 +137,10 @@ export default function ProfilePage() {
                 <label className="label">Commune</label>
                 <input type="text" value={form.commune || ''} onChange={set('commune')} className="input" placeholder="Paris 1er" />
               </div>
+              <div className="md:col-span-2">
+                <label className="label">Adresse complète</label>
+                <input type="text" value={(form as any).address || ''} onChange={set('address')} className="input" placeholder="44 rue Grande, 77176 Savigny-le-Temple" />
+              </div>
               <div>
                 <label className="label">Date de naissance</label>
                 <input type="date" value={form.date_of_birth?.split('T')[0] || ''} onChange={set('date_of_birth')} className="input" />
@@ -164,6 +168,10 @@ export default function ProfilePage() {
               <div>
                 <label className="label">N° permis de conduire</label>
                 <input type="text" value={form.driver_license_number || ''} onChange={set('driver_license_number')} className="input" placeholder="DUPOJ100012A1000" />
+              </div>
+              <div>
+                <label className="label">Date de délivrance du permis</label>
+                <input type="date" value={(form as any).driver_license_date?.split('T')[0] || ''} onChange={set('driver_license_date')} className="input" />
               </div>
               <div>
                 <label className="label">N° carte professionnelle</label>

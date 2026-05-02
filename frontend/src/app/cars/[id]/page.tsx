@@ -32,6 +32,7 @@ export default function CarDetailPage() {
   // B2B fields
   const [reason, setReason] = useState('');
   const [vehicleLocation, setVehicleLocation] = useState('');
+  const [immobilizedPlate, setImmobilizedPlate] = useState('');
   const [pickupTime, setPickupTime] = useState('09:00');
   const [returnTime, setReturnTime] = useState('18:00');
   const [notes, setNotes] = useState('');
@@ -66,6 +67,7 @@ export default function CarDetailPage() {
     if (!range?.from || !range?.to) { toast.error('Sélectionnez les dates de location'); return; }
     if (!reason) { toast.error('Veuillez indiquer le motif de location'); return; }
     if (!vehicleLocation.trim()) { toast.error('Veuillez indiquer la localisation du véhicule immobilisé'); return; }
+    if (!immobilizedPlate.trim()) { toast.error('Veuillez indiquer la plaque du véhicule immobilisé'); return; }
 
     setSubmitting(true);
     try {
@@ -77,6 +79,7 @@ export default function CarDetailPage() {
         return_time: returnTime,
         reason,
         vehicle_location: vehicleLocation.trim(),
+        immobilized_plate: immobilizedPlate.trim().toUpperCase(),
         notes: notes || undefined,
       });
       toast.success('Demande enregistrée ! Votre contrat a été envoyé par email.');
@@ -211,6 +214,19 @@ export default function CarDetailPage() {
                 />
               </div>
 
+              {/* Immobilized plate */}
+              <div>
+                <label className="label text-xs">Immatriculation du taxi immobilisé <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={immobilizedPlate}
+                  onChange={(e) => setImmobilizedPlate(e.target.value.toUpperCase())}
+                  className="input py-2 text-sm font-mono tracking-widest"
+                  placeholder="Ex: AB-123-CD"
+                  maxLength={10}
+                />
+              </div>
+
               {/* Calendar */}
               <div>
                 <label className="label text-xs">Dates de location</label>
@@ -275,7 +291,7 @@ export default function CarDetailPage() {
               )}
 
               {/* Missing fields warning */}
-              {(!reason || !vehicleLocation.trim() || !range?.from || !range?.to) && (
+              {(!reason || !vehicleLocation.trim() || !immobilizedPlate.trim() || !range?.from || !range?.to) && (
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <div>
@@ -283,6 +299,7 @@ export default function CarDetailPage() {
                     <ul className="mt-1 space-y-0.5">
                       {!reason && <li>• Motif de la demande</li>}
                       {!vehicleLocation.trim() && <li>• Localisation du véhicule immobilisé</li>}
+                      {!immobilizedPlate.trim() && <li>• Immatriculation du taxi immobilisé</li>}
                       {(!range?.from || !range?.to) && <li>• Dates de location</li>}
                     </ul>
                   </div>
@@ -291,7 +308,7 @@ export default function CarDetailPage() {
 
               <button
                 onClick={handleReserve}
-                disabled={submitting || !range?.from || !range?.to || !reason || !vehicleLocation.trim()}
+                disabled={submitting || !range?.from || !range?.to || !reason || !vehicleLocation.trim() || !immobilizedPlate.trim()}
                 className="btn-primary w-full py-3 rounded-xl"
               >
                 {submitting

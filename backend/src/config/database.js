@@ -358,6 +358,11 @@ function runMigrations() {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)'); } catch {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_otp_user ON otp_codes(user_id, type)'); } catch {}
 
+  // New contract fields
+  addCol('users',        'driver_license_date', 'TEXT');
+  addCol('users',        'address',             'TEXT');
+  addCol('reservations', 'immobilized_plate',   'TEXT');
+
   // Bootstrap admin account (runs once)
   try {
     const adminExists = db.prepare("SELECT id FROM users WHERE email = 'elbahijeadam@gmail.com' AND role = 'admin'").get();

@@ -186,12 +186,12 @@ function generateContractHtml({ reservation, user, car }) {
   <div class="section-title">Locataire :</div>
   <table class="data-table">
     ${field('NOM', `${user.first_name} ${user.last_name}`)}
-    ${field('ADRESSE', user.commune || '')}
+    ${field('ADRESSE', user.address || user.commune || '')}
     ${field('PERMIS DE CONDUIRE N°', user.driver_license_number)}
-    ${field('DELIVRE LE', user.date_of_birth ? fmt(user.date_of_birth) : '')}
+    ${field('DELIVRE LE', user.driver_license_date ? fmt(user.driver_license_date) : '')}
     ${field('CARTE PROFESSIONNELLE N', user.professional_card_number)}
     ${field('COMMUNE DE STATIONNEMENT DU VEHICULE IMMOBILISE', user.commune)}
-    ${field('IMMATRICULATION DU VEHICULE IMMOBILISE', '')}
+    ${field('IMMATRICULATION DU VEHICULE IMMOBILISE', reservation.immobilized_plate || '')}
     ${field('NUMERO CONVENTIONNEMENT', user.license_number)}
     ${field('LIEU D\'IMMOBILISATION DE VEHICULE + CAUSE', lieuCause)}
   </table>

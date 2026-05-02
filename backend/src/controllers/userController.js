@@ -14,8 +14,8 @@ const VALID_DOC_TYPES = [
 const updateProfile = async (req, res) => {
   const {
     first_name, last_name, phone, date_of_birth, place_of_birth,
-    driver_license_number, professional_card_number, license_number,
-    commune, reason_for_immobilization,
+    driver_license_number, driver_license_date, professional_card_number, license_number,
+    commune, address, reason_for_immobilization,
   } = req.body;
 
   try {
@@ -27,18 +27,20 @@ const updateProfile = async (req, res) => {
         date_of_birth = COALESCE($4, date_of_birth),
         place_of_birth = COALESCE($5, place_of_birth),
         driver_license_number = COALESCE($6, driver_license_number),
-        professional_card_number = COALESCE($7, professional_card_number),
-        license_number = COALESCE($8, license_number),
-        commune = COALESCE($9, commune),
-        reason_for_immobilization = COALESCE($10, reason_for_immobilization)
-      WHERE id = $11
+        driver_license_date = COALESCE($7, driver_license_date),
+        professional_card_number = COALESCE($8, professional_card_number),
+        license_number = COALESCE($9, license_number),
+        commune = COALESCE($10, commune),
+        address = COALESCE($11, address),
+        reason_for_immobilization = COALESCE($12, reason_for_immobilization)
+      WHERE id = $13
       RETURNING id, email, first_name, last_name, phone, date_of_birth, place_of_birth,
-        driver_license_number, professional_card_number, license_number, commune,
-        reason_for_immobilization, role, status, is_verified, email_verified, phone_verified`,
+        driver_license_number, driver_license_date, professional_card_number, license_number,
+        commune, address, reason_for_immobilization, role, status, is_verified, email_verified, phone_verified`,
       [
         first_name, last_name, phone, date_of_birth, place_of_birth,
-        driver_license_number, professional_card_number, license_number,
-        commune, reason_for_immobilization, req.user.id,
+        driver_license_number, driver_license_date, professional_card_number, license_number,
+        commune, address, reason_for_immobilization, req.user.id,
       ]
     );
     const { password_hash: _, ...profile } = result.rows[0];

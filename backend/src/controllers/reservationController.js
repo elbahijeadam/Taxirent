@@ -10,7 +10,7 @@ const createReservation = async (req, res) => {
   const {
     car_id, start_date, end_date,
     pickup_location, dropoff_location, pickup_time, return_time,
-    reason, vehicle_location, notes,
+    reason, vehicle_location, immobilized_plate, notes,
   } = req.body;
 
   if (req.user.role !== 'admin' && (!req.user.email_verified || !req.user.phone_verified)) {
@@ -97,14 +97,15 @@ const createReservation = async (req, res) => {
     const result = await query(
       `INSERT INTO reservations
          (user_id, car_id, start_date, end_date, pickup_location, dropoff_location,
-          pickup_time, return_time, reason, vehicle_location, total_days,
+          pickup_time, return_time, reason, vehicle_location, immobilized_plate, total_days,
           price_per_day, total_amount, deposit_amount, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
       [
         req.user.id, car_id, start_date, end_date,
         pickup_location || null, dropoff_location || null,
         pickup_time || null, return_time || null,
         reason, vehicle_location.trim(),
+        immobilized_plate ? immobilized_plate.trim().toUpperCase() : null,
         totalDays, car.price_per_day, totalAmount, car.deposit_amount,
         notes || null,
       ]
