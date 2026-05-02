@@ -409,20 +409,6 @@ function runMigrations() {
 
 runMigrations();
 
-/* ── Dev-only: promote test account to admin ────────────────────────────── */
-if (process.env.NODE_ENV === 'development') {
-  const DEV_ADMIN_EMAIL = 'jeandupont@gmail.com';
-  try {
-    const result = db.prepare(
-      "UPDATE users SET role = 'admin', status = 'approved', email_verified = 1, phone_verified = 1 WHERE email = ?"
-    ).run(DEV_ADMIN_EMAIL);
-    if (result.changes > 0) {
-      console.log(`[DEV] User ${DEV_ADMIN_EMAIL} promoted to admin`);
-    }
-  } catch (e) {
-    console.error('[DEV] Failed to promote dev admin:', e.message);
-  }
-}
 
 /* ── Row normaliser ─────────────────────────────────────────────────────── */
 const JSON_COLS = new Set(['features', 'images']);

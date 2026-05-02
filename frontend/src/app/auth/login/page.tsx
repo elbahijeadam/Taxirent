@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Car, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 
@@ -39,9 +40,10 @@ export default function LoginPage() {
     <div className="pt-16 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="bg-brand-500 rounded-xl p-2"><Car className="w-6 h-6 text-white" /></div>
-            <span className="text-2xl font-bold text-gray-900">AutoRent</span>
+          <Link href="/" className="inline-block mb-6">
+            <div className="bg-white rounded-xl px-3 py-2 border border-gray-200 shadow-sm inline-block">
+              <Image src="/logo-taxirent.png" alt="Taxirent" width={120} height={40} className="h-8 w-auto" />
+            </div>
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Connexion</h1>
           <p className="text-gray-500 mt-2">Accédez à votre espace client</p>

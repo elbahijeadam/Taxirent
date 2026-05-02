@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Car, Mail, Phone, CheckCircle, Loader2, RefreshCw, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Phone, CheckCircle, Loader2, RefreshCw, ArrowRight } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { getUser, getToken, saveAuth } from '@/lib/auth';
 import { User } from '@/types';
@@ -291,9 +292,10 @@ export default function VerifyPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="bg-brand-500 rounded-xl p-2"><Car className="w-6 h-6 text-white" /></div>
-            <span className="text-2xl font-bold text-gray-900">AutoRent</span>
+          <Link href="/" className="inline-block mb-6">
+            <div className="bg-white rounded-xl px-3 py-2 border border-gray-200 shadow-sm inline-block">
+              <Image src="/logo-taxirent.png" alt="Taxirent" width={120} height={40} className="h-8 w-auto" />
+            </div>
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Vérification du compte</h1>
           <p className="text-gray-500 mt-2 text-sm">Deux étapes pour sécuriser votre accès</p>

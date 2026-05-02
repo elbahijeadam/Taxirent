@@ -6,7 +6,7 @@ const bcrypt      = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { db }      = require('../src/config/database');
 
-const email    = process.argv[2] || 'admin@autorent.fr';
+const email    = process.argv[2] || 'admin@taxirent.fr';
 const password = process.argv[3] || 'Admin1234!';
 
 (async () => {
@@ -21,7 +21,7 @@ const password = process.argv[3] || 'Admin1234!';
     INSERT INTO users
       (id, email, password_hash, first_name, last_name, role, status,
        is_verified, email_verified, phone_verified)
-    VALUES (?, ?, ?, 'Admin', 'AutoRent', 'admin', 'approved', 1, 1, 1)
+    VALUES (?, ?, ?, 'Admin', 'Taxirent', 'admin', 'approved', 1, 1, 1)
   `).run(uuidv4(), email, hash);
 
   console.log('✅ Admin account created successfully.');

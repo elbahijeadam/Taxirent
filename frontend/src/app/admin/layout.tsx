@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
-  LayoutDashboard, Users, Calendar, FileText, LogOut, Car,
+  LayoutDashboard, Users, Calendar, FileText, LogOut,
   ExternalLink, Menu, X, ShieldCheck,
 } from 'lucide-react';
 import { getUser, clearAuth } from '@/lib/auth';
@@ -48,17 +49,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-slate-700/50">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center">
-            <Car className="w-5 h-5 text-white" />
+        <Link href="/" className="inline-block mb-2">
+          <div className="bg-white rounded-xl px-2 py-1 inline-block">
+            <Image src="/logo-taxirent.png" alt="Taxirent" width={110} height={36} className="h-8 w-auto" />
           </div>
-          <div>
-            <p className="text-white font-bold text-base leading-tight">AutoRent</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <ShieldCheck className="w-3 h-3 text-brand-400" />
-              <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Admin</span>
-            </div>
-          </div>
+        </Link>
+        <div className="flex items-center gap-1 mt-1">
+          <ShieldCheck className="w-3 h-3 text-brand-400" />
+          <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Administration</span>
         </div>
       </div>
 
@@ -144,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => setSidebar(true)} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-gray-900">AutoRent Admin</span>
+          <span className="font-bold text-gray-900">Taxirent Admin</span>
           <div className="w-9" />
         </div>
 
