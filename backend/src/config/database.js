@@ -358,6 +358,28 @@ function runMigrations() {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)'); } catch {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_otp_user ON otp_codes(user_id, type)'); } catch {}
 
+  // Bootstrap admin account (runs once)
+  try {
+    const adminExists = db.prepare("SELECT id FROM users WHERE email = 'elbahijeadam@gmail.com' AND role = 'admin'").get();
+    if (!adminExists) {
+      db.exec('BEGIN');
+      db.exec('DELETE FROM email_logs');
+      db.exec('DELETE FROM otp_codes');
+      db.exec('DELETE FROM documents');
+      db.exec('UPDATE reservations SET user_id = NULL');
+      db.exec('DELETE FROM users');
+      db.prepare(
+        `INSERT INTO users (id, email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
+         VALUES (?, ?, ?, ?, ?, ?, 'admin', 'approved', 1, 1)`
+      ).run(uuidv4(), 'elbahijeadam@gmail.com', '$2a$12$R8jrfOqcsneftp5z.sXPe.xQ7PLvASykQftBdqc25Xi380nDzC7US', 'Adam', 'El Bahije', '+33606763589');
+      db.exec('COMMIT');
+      console.log('[SETUP] Admin account created: elbahijeadam@gmail.com');
+    }
+  } catch (e) {
+    try { db.exec('ROLLBACK'); } catch {}
+    console.error('[SETUP] Admin bootstrap failed:', e.message);
+  }
+
   // Recreate documents table if old restrictive CHECK constraint is present
   const docRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='documents'").get();
   if (docRow && docRow.sql && docRow.sql.includes("CHECK (type IN")) {

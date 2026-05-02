@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, FileText, ExternalLink,
-  Loader2, User, Phone, MapPin, Calendar, Car, Shield,
+  Loader2, User, Phone, MapPin, Calendar, Car, Shield, Trash2, ShieldCheck, Unlock,
 } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatDate, formatPrice } from '@/lib/auth';
@@ -44,9 +44,10 @@ export default function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [data,     setData]     = useState<any>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [actioning,setActioning]= useState(false);
+  const [data,      setData]      = useState<any>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [actioning, setActioning] = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
 
   useEffect(() => {
     adminApi.getUserDetails(id)
@@ -54,6 +55,45 @@ export default function AdminUserDetail() {
       .catch(() => { toast.error('Utilisateur introuvable'); router.push('/admin/users'); })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleManualVerify = async () => {
+    setActioning(true);
+    try {
+      const res = await adminApi.manualVerify(id);
+      setData((d: any) => ({ ...d, user: { ...d.user, ...res.data } }));
+      toast.success('Compte débloqué et approuvé ✓');
+    } catch {
+      toast.error('Échec du déblocage');
+    } finally {
+      setActioning(false);
+    }
+  };
+
+  const handlePromote = async (role: 'admin' | 'user') => {
+    setActioning(true);
+    try {
+      const res = await adminApi.promoteUser(id, role);
+      setData((d: any) => ({ ...d, user: { ...d.user, role: res.data.role } }));
+      toast.success(role === 'admin' ? 'Promu administrateur ✓' : 'Rétrogradé utilisateur ✓');
+    } catch {
+      toast.error('Échec de la modification du rôle');
+    } finally {
+      setActioning(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Supprimer définitivement le compte de ${data?.user?.first_name} ${data?.user?.last_name} ?`)) return;
+    setDeleting(true);
+    try {
+      await adminApi.deleteUser(id);
+      toast.success('Compte supprimé');
+      router.push('/admin/users');
+    } catch {
+      toast.error('Échec de la suppression');
+      setDeleting(false);
+    }
+  };
 
   const handleStatus = async (status: 'approved' | 'rejected' | 'pending') => {
     setActioning(true);
@@ -253,6 +293,64 @@ export default function AdminUserDetail() {
               <p>• Rejeter bloque l'accès aux réservations.</p>
               <p>• Documents requis : 7/7 pour dossier complet.</p>
             </div>
+          </div>
+
+          {/* Débloquer */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Unlock className="w-4 h-4 text-brand-500" /> Débloquer le compte
+            </h2>
+            <p className="text-xs text-gray-400 mb-4">Force la vérification email + téléphone et approuve le dossier immédiatement.</p>
+            <button
+              onClick={handleManualVerify}
+              disabled={actioning}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold text-sm transition disabled:opacity-50"
+            >
+              {actioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlock className="w-4 h-4" />}
+              Forcer la vérification
+            </button>
+          </div>
+
+          {/* Rôle */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-brand-500" /> Rôle
+            </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Rôle actuel : <span className="font-semibold text-gray-700">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</span>
+            </p>
+            {user.role !== 'admin' ? (
+              <button
+                onClick={() => handlePromote('admin')}
+                disabled={actioning}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 hover:bg-slate-700 text-white rounded-xl font-semibold text-sm transition disabled:opacity-50"
+              >
+                <ShieldCheck className="w-4 h-4" /> Promouvoir admin
+              </button>
+            ) : (
+              <button
+                onClick={() => handlePromote('user')}
+                disabled={actioning}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+              >
+                Rétrograder en utilisateur
+              </button>
+            )}
+          </div>
+
+          {/* Danger */}
+          <div className="bg-white rounded-2xl border border-red-100 p-6 shadow-sm">
+            <h2 className="font-bold text-red-600 mb-3 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" /> Zone dangereuse
+            </h2>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition disabled:opacity-50"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Supprimer le compte
+            </button>
           </div>
         </div>
       </div>

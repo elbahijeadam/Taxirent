@@ -345,6 +345,57 @@ const reprocessDocument = async (req, res) => {
   }
 };
 
+/* ── User management ────────────────────────────────────────────────────── */
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  if (id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
+  try {
+    const result = await query("DELETE FROM users WHERE id = $1 AND role = 'user'", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('deleteUser error:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+};
+
+const promoteUser = async (req, res) => {
+  const { role } = req.body;
+  if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide.' });
+  const { id } = req.params;
+  if (id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
+  try {
+    const result = await query(
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, first_name, last_name, role',
+      [role, id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('promoteUser error:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+};
+
+const manualVerifyUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await query(
+      `UPDATE users SET email_verified = 1, phone_verified = 1, status = 'approved' WHERE id = $1`,
+      [id]
+    );
+    const result = await query(
+      'SELECT id, email, first_name, last_name, status, email_verified, phone_verified, role FROM users WHERE id = $1',
+      [id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('manualVerifyUser error:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+};
+
 /* ── Dev-only DB reset ──────────────────────────────────────────────────── */
 const resetDatabase = async (req, res) => {
   if (process.env.NODE_ENV !== 'development') {
@@ -389,4 +440,4 @@ const resetDatabase = async (req, res) => {
   }
 };
 
-module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, resetDatabase };
+module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, resetDatabase };

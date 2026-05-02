@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const {
-  getStats, listUsers, getUserDetails, updateUserStatus,
+  getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser,
   listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument,
   listReservations, updateReservationStatus, resetDatabase,
 } = require('../controllers/adminController');
@@ -13,6 +13,9 @@ router.get('/stats', getStats);
 router.get('/users', listUsers);
 router.get('/users/:id', getUserDetails);
 router.patch('/users/:id/status', updateUserStatus);
+router.patch('/users/:id/verify', manualVerifyUser);
+router.patch('/users/:id/role', promoteUser);
+router.delete('/users/:id', deleteUser);
 
 router.get('/documents/pending',             listPendingDocuments);
 router.get('/documents/:id/verification',   getDocumentVerification);

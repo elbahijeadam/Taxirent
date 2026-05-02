@@ -87,6 +87,9 @@ export const adminApi = {
   listUsers:              (params?: Record<string, string | number>) => api.get('/admin/users', { params }),
   getUserDetails:         (id: string) => api.get(`/admin/users/${id}`),
   updateUserStatus:       (id: string, status: string) => api.patch(`/admin/users/${id}/status`, { status }),
+  deleteUser:             (id: string) => api.delete(`/admin/users/${id}`),
+  promoteUser:            (id: string, role: 'admin' | 'user') => api.patch(`/admin/users/${id}/role`, { role }),
+  manualVerify:           (id: string) => api.patch(`/admin/users/${id}/verify`),
   listReservations:       (params?: Record<string, string | number>) => api.get('/admin/reservations', { params }),
   updateReservationStatus:(id: string, status: string, admin_note?: string) =>
     api.patch(`/admin/reservations/${id}/status`, { status, admin_note }),
