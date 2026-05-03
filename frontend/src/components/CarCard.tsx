@@ -4,7 +4,7 @@ import { Car } from '@/types';
 
 const CATEGORY_LABELS: Record<string, string> = {
   economy: 'Économique', compact: 'Compacte', midsize: 'Intermédiaire',
-  suv: 'SUV', luxury: 'Luxe', van: 'Van',
+  suv: 'SUV', van: 'Van',
   sedan: 'Berline', electric: 'Électrique', hybrid: 'Hybride',
 };
 
@@ -16,7 +16,6 @@ const GRADIENT: Record<string, string> = {
   economy: 'from-zinc-800 to-zinc-600',
   compact: 'from-zinc-800 to-zinc-600',
   midsize: 'from-zinc-700 to-zinc-500',
-  luxury: 'from-gray-900 to-gray-700',
   van: 'from-stone-800 to-stone-600',
 };
 
@@ -28,7 +27,6 @@ const BADGE: Record<string, string> = {
   economy: 'bg-zinc-600',
   compact: 'bg-zinc-600',
   midsize: 'bg-zinc-500',
-  luxury: 'bg-amber-600',
   van: 'bg-stone-600',
 };
 
@@ -66,9 +64,9 @@ export default function CarCard({ car }: { car: Car }) {
         </span>
 
         {!car.is_available && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white font-semibold bg-red-600 px-4 py-2 rounded-full text-sm">
-              Indisponible
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <span className="text-white font-bold bg-red-600 px-4 py-2 rounded-full text-sm text-center leading-tight">
+              Momentanément indisponible
             </span>
           </div>
         )}

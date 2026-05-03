@@ -117,7 +117,7 @@ async function initDb() {
         color          TEXT,
         license_plate  TEXT UNIQUE NOT NULL,
         category       TEXT CHECK (category IN
-                         ('economy','compact','midsize','suv','luxury','van',
+                         ('economy','compact','midsize','suv','van',
                           'sedan','electric','hybrid')),
         transmission   TEXT CHECK (transmission IN ('automatic','manual')),
         fuel_type      TEXT CHECK (fuel_type IN ('petrol','diesel','electric','hybrid')),
@@ -227,6 +227,14 @@ async function initDb() {
       `);
     }
 
+    // Migrate: replace legacy 'luxury' category with 'sedan'
+    await client.query(`UPDATE cars SET category = 'sedan' WHERE category = 'luxury'`);
+
+    // Migrate: drop old category CHECK constraint and recreate without 'luxury'
+    await client.query(`ALTER TABLE cars DROP CONSTRAINT IF EXISTS cars_category_check`);
+    await client.query(`ALTER TABLE cars ADD CONSTRAINT cars_category_check
+      CHECK (category IN ('economy','compact','midsize','suv','van','sedan','electric','hybrid'))`);
+
     console.log('[DB] Schema ready');
   } finally {
     client.release();
@@ -311,7 +319,7 @@ async function initDb() {
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide']),teslaM3Img,'Paris',0],
 
     // ── Boulogne-Billancourt ────────────────────────────────────────────────
-    ['Mercedes','Classe E',2021,'Noir','MB-001-CLE','luxury','automatic','diesel',5,4,105,1500,
+    ['Mercedes','Classe E',2021,'Noir','MB-001-CLE','sedan','automatic','diesel',5,4,105,1500,
      'Mercedes Classe E équipée taxi haut de gamme. Confort exceptionnel pour une clientèle premium.',
      JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Toit ouvrant']),mercedesImg,'Boulogne-Billancourt',0],
     ['Skoda','Octavia',2020,'Gris','SK-003-OCT','sedan','automatic','diesel',5,4,68,1500,
@@ -338,7 +346,7 @@ async function initDb() {
     ['Toyota','Prius',2022,'Blanc','TY-006-PRI','hybrid','automatic','hybrid',5,4,72,1500,
      'Toyota Prius hybride équipée taxi. Parfaite pour desservir Versailles et le 78. Très économique.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Versailles',1],
-    ['Mercedes','Classe E',2020,'Noir','MB-002-CLE','luxury','automatic','diesel',5,4,105,1500,
+    ['Mercedes','Classe E',2020,'Noir','MB-002-CLE','sedan','automatic','diesel',5,4,105,1500,
      'Mercedes Classe E équipée taxi. Véhicule en révision, disponible prochainement.',
      JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir']),mercedesImg,'Versailles',0],
 
@@ -367,7 +375,7 @@ async function initDb() {
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide']),teslaImg,'Cergy',0],
 
     // ── Issy-les-Moulineaux ────────────────────────────────────────────────
-    ['Mercedes','Classe E',2022,'Noir','MB-003-CLE','luxury','automatic','hybrid',5,4,110,1500,
+    ['Mercedes','Classe E',2022,'Noir','MB-003-CLE','sedan','automatic','hybrid',5,4,110,1500,
      'Mercedes Classe E hybride équipée taxi haut de gamme. Pour les déplacements professionnels exigeants.',
      JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Hybride']),mercedesImg,'Issy-les-Moulineaux',1],
   ];
