@@ -10,7 +10,15 @@ const { authenticate } = require('./middleware/auth');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'script-src': ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
+      'img-src':    ["'self'", 'data:', 'https://images.unsplash.com'],
+    },
+  },
+}));
 const allowedOrigins = [
   'http://localhost:3000',
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : []),
