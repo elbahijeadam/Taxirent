@@ -39,17 +39,17 @@ export default function CarDetailPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    const promises: Promise<any>[] = [carApi.get(id), carApi.getAvailability(id)];
-    if (isLoggedIn()) promises.push(authApi.getMe());
-
-    Promise.all(promises)
-      .then(([carRes, availRes, meRes]) => {
+    Promise.all([carApi.get(id), carApi.getAvailability(id)])
+      .then(([carRes, availRes]) => {
         setCar(carRes.data);
         setBookedRanges(availRes.data);
-        if (meRes) setProfileUser(meRes.data);
       })
       .catch(() => toast.error('Erreur de chargement'))
       .finally(() => setLoading(false));
+
+    if (isLoggedIn()) {
+      authApi.getMe().then((meRes) => setProfileUser(meRes.data)).catch(() => {});
+    }
   }, [id]);
 
   const disabledDays = [
