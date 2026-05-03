@@ -157,15 +157,17 @@ function generateContractHtml({ reservation, user, car }) {
     .page { padding: 18px 24px; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="has-bar">
 <div class="print-bar">
   <span>Contrat de location — Taxirent</span>
-  <button class="print-btn" onclick="window.print()">
+  <button class="print-btn" id="dlBtn" onclick="downloadPdf()">
     ⬇ Télécharger en PDF
   </button>
 </div>
-<div class="page">
+<div class="page" id="contractPage">
 
   <!-- ══ EN-TÊTE ══ -->
   <div class="header">
@@ -292,6 +294,34 @@ function generateContractHtml({ reservation, user, car }) {
   </div>
 
 </div>
+<script>
+async function downloadPdf() {
+  const btn = document.getElementById('dlBtn');
+  btn.textContent = 'Génération...';
+  btn.disabled = true;
+  try {
+    const el = document.getElementById('contractPage');
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW = pageW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    let y = 0;
+    while (y < imgH) {
+      if (y > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -y, imgW, imgH);
+      y += pageH;
+    }
+    pdf.save('contrat-taxirent.pdf');
+  } catch(e) {
+    alert('Erreur lors de la génération du PDF. Utilisez Ctrl+P → Enregistrer en PDF.');
+  }
+  btn.textContent = '⬇ Télécharger en PDF';
+  btn.disabled = false;
+}
+</script>
 </body>
 </html>`;
 }
