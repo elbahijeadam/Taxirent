@@ -3,7 +3,7 @@ const { query } = require('../config/database');
 const listCars = async (req, res) => {
   const { category, transmission, fuel_type, min_price, max_price, seats, city, available_from, available_to } = req.query;
 
-  let conditions = ['c.is_available = 1'];
+  let conditions = [];
   const params = [];
   let p = 1;
 
@@ -15,8 +15,9 @@ const listCars = async (req, res) => {
   if (seats) { conditions.push(`c.seats >= $${p++}`); params.push(seats); }
   if (city) { conditions.push(`c.city = $${p++}`); params.push(city); }
 
-  // Filter out cars already reserved in requested date range
+  // When date range given: only show available cars not already reserved
   if (available_from && available_to) {
+    conditions.push(`c.is_available = 1`);
     conditions.push(`c.id NOT IN (
       SELECT car_id FROM reservations
       WHERE status NOT IN ('cancelled')
@@ -26,9 +27,11 @@ const listCars = async (req, res) => {
     params.push(available_to, available_from);
   }
 
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
   try {
     const result = await query(
-      `SELECT c.* FROM cars c WHERE ${conditions.join(' AND ')} ORDER BY c.price_per_day ASC`,
+      `SELECT c.* FROM cars c ${where} ORDER BY c.is_available DESC, c.price_per_day ASC`,
       params
     );
     res.json(result.rows);

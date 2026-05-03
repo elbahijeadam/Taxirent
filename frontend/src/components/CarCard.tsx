@@ -79,8 +79,14 @@ export default function CarCard({ car }: { car: Car }) {
         </h3>
         <p className="text-gray-400 text-sm mt-1">{car.year}</p>
         <div className="mt-5 flex items-center justify-between">
-          <span className="text-sm font-medium text-brand-500">Voir le véhicule</span>
-          <span className="text-brand-500 group-hover:translate-x-1 transition-transform inline-block">→</span>
+          {car.is_available ? (
+            <>
+              <span className="text-sm font-medium text-brand-500">Voir le véhicule</span>
+              <span className="text-brand-500 group-hover:translate-x-1 transition-transform inline-block">→</span>
+            </>
+          ) : (
+            <span className="text-sm font-semibold text-red-500">Momentanément indisponible</span>
+          )}
         </div>
       </div>
     </Link>
