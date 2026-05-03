@@ -340,7 +340,7 @@ async function initDb() {
     // ── Nanterre ───────────────────────────────────────────────────────────
     ['Renault','Talisman',2020,'Gris','RN-001-TAL','sedan','automatic','diesel',5,4,68,1500,
      'Renault Talisman berline équipée taxi. Spacieuse et confortable, idéale pour la Défense et les déplacements professionnels.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur de vitesse']),renaultImg,'Nanterre',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur de vitesse']),renaultImg,'Nanterre',0],
     ['Skoda','Superb',2020,'Noir','SK-004-SUP','sedan','automatic','diesel',5,4,82,1500,
      'Skoda Superb berline spacieuse équipée taxi. En révision, retour prévu prochainement.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Sièges chauffants','Grand coffre']),octaviaImg,'Nanterre',0],
@@ -348,27 +348,27 @@ async function initDb() {
     // ── Versailles ─────────────────────────────────────────────────────────
     ['Toyota','Prius',2022,'Blanc','TY-006-PRI','hybrid','automatic','hybrid',5,4,72,1500,
      'Toyota Prius hybride équipée taxi. Parfaite pour desservir Versailles, le 78 et au-delà.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Versailles',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Versailles',0],
 
     // ── Bobigny ────────────────────────────────────────────────────────────
     ['Hyundai','Ioniq',2021,'Blanc','HY-001-ION','hybrid','automatic','hybrid',5,4,70,1500,
      'Hyundai Ioniq hybride équipée taxi. Faibles émissions, idéale pour le 93 et les zones ZFE.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride','Caméra de recul']),hyundaiImg,'Bobigny',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride','Caméra de recul']),hyundaiImg,'Bobigny',0],
 
     // ── Évry ───────────────────────────────────────────────────────────────
     ['Peugeot','3008',2022,'Gris','PE-002-300','suv','automatic','hybrid',5,5,88,1500,
      'Peugeot 3008 hybride rechargeable équipé taxi. SUV moderne, idéal pour les transferts aéroport Orly.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride rechargeable','Caméra 360°']),peugeotImg,'Évry',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride rechargeable','Caméra 360°']),peugeotImg,'Évry',0],
 
     // ── Cergy ──────────────────────────────────────────────────────────────
     ['Kia','e-Niro',2022,'Blanc','KI-001-ENI','electric','automatic','electric',5,4,85,1500,
      'Kia e-Niro 100% électrique équipée taxi. Autonomie 455km, zéro émission. Idéale pour le Val-d\'Oise.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Électrique','Recharge rapide']),kiaImg,'Cergy',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Électrique','Recharge rapide']),kiaImg,'Cergy',0],
 
     // ── Issy-les-Moulineaux ────────────────────────────────────────────────
     ['Mercedes','Classe E',2022,'Noir','MB-003-CLE','sedan','automatic','hybrid',5,4,110,1500,
      'Mercedes Classe E hybride équipée taxi. Confort et élégance pour vos déplacements professionnels.',
-     JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Hybride']),mercedesImg,'Issy-les-Moulineaux',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Hybride']),mercedesImg,'Issy-les-Moulineaux',0],
   ];
 
   let addedCars = 0;
@@ -378,7 +378,7 @@ async function initDb() {
          (make,model,year,color,license_plate,category,transmission,fuel_type,
           seats,doors,price_per_day,deposit_amount,description,features,images,city,is_available)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-       ON CONFLICT (license_plate) DO NOTHING`,
+       ON CONFLICT (license_plate) DO UPDATE SET is_available = EXCLUDED.is_available`,
       [make,model,year,color,lp,cat,trans,fuel,seats,doors,ppd,dep,desc,feat,imgs,city,avail]
     );
     if (r.rowCount > 0) addedCars++;
