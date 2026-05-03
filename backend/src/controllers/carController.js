@@ -54,7 +54,7 @@ const getCarAvailability = async (req, res) => {
     const result = await query(
       `SELECT start_date, end_date FROM reservations
        WHERE car_id = $1 AND status NOT IN ('cancelled')
-         AND end_date >= CURRENT_DATE
+         AND end_date >= to_char(CURRENT_DATE, 'YYYY-MM-DD')
        ORDER BY start_date`,
       [req.params.id]
     );

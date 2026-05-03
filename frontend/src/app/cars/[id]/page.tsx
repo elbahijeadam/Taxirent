@@ -44,7 +44,7 @@ export default function CarDetailPage() {
         setCar(carRes.data);
         setBookedRanges(availRes.data);
       })
-      .catch(() => toast.error('Erreur de chargement'))
+      .catch((err) => toast.error(err?.response?.data?.error || err?.message || 'Erreur de chargement', { duration: 6000 }))
       .finally(() => setLoading(false));
 
     if (isLoggedIn()) {

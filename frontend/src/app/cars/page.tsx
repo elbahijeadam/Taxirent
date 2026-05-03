@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { carApi } from '@/lib/api';
 import { Car } from '@/types';
 import CarCard from '@/components/CarCard';
@@ -28,7 +29,8 @@ export default function CarsPage() {
       if (cty) params.city = cty;
       const res = await carApi.list(params);
       setCars(res.data);
-    } catch {
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || 'Erreur lors du chargement des véhicules', { duration: 6000 });
       setCars([]);
     } finally {
       setLoading(false);
