@@ -3,7 +3,7 @@ const { query } = require('../config/database');
 const listCars = async (req, res) => {
   const { category, transmission, fuel_type, min_price, max_price, seats, city, available_from, available_to } = req.query;
 
-  let conditions = ['c.is_available = true'];
+  let conditions = ['c.is_available = 1'];
   const params = [];
   let p = 1;
 

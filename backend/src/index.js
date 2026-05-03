@@ -37,6 +37,9 @@ app.use('/api/auth/verify-email', otpLimiter);
 app.use('/api/auth/verify-phone', otpLimiter);
 app.use('/api/auth/resend-otp',   rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Trop de demandes de renvoi. Réessayez dans 15 minutes.' } }));
 
+// Strict rate limit for login (brute-force protection)
+app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 5, skipSuccessfulRequests: true, message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.', code: 'RATE_LIMITED' } }));
+
 // General auth and API rate limits
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many requests, please try again later.' } }));
 app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));

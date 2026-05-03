@@ -78,7 +78,7 @@ const createReservation = async (req, res) => {
   if (start < new Date()) return res.status(400).json({ error: 'La date de début doit être dans le futur.' });
 
   try {
-    const carResult = await query('SELECT * FROM cars WHERE id = $1 AND is_available = true', [car_id]);
+    const carResult = await query('SELECT * FROM cars WHERE id = $1 AND is_available = 1', [car_id]);
     if (!carResult.rows[0]) return res.status(404).json({ error: 'Véhicule introuvable ou indisponible.' });
     const car = carResult.rows[0];
 
