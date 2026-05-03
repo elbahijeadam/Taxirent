@@ -92,7 +92,7 @@ async function generateContractPdf(reservation: any, user: any) {
   const depositAmount = parseFloat(reservation.deposit_amount || 1000);
   const conditions = [
     `Le loueur met à disposition du locataire un véhicule équipé taxi en conformité avec la réglementation en vigueur : taximètre, lumineux, imprimante, et contrôles techniques à jour. Le véhicule est assuré par le locataire (transfert de son assurance tous risques de son taxi immobilisé), il devra immédiatement signaler tout incident à son assurance et au loueur.`,
-    `Au départ de la location le locataire devra laisser un chèque de caution de ${depositAmount.toLocaleString('fr-FR')}€.`,
+    `Au départ de la location le locataire devra laisser un chèque de caution de ${depositAmount}€.`,
     `Le véhicule devra être restitué dans l'état où il a été emprunté. En cas contraire le loueur pourra facturer les frais de remise en état (Frais de Nettoyage forfaitaire 50€).`,
     `Le véhicule relais devra toujours être restitué plein fait, sinon 2€/Litre manquant sera facturé.`,
     `La location s'entend kilométrage illimité. Le locataire doit transmettre le contrat à la Mairie de la Commune de Stationnement.`,
