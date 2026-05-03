@@ -6,7 +6,7 @@ import {
   CheckCircle, Calendar, Car, MapPin, Clock, FileText, Mail,
   Loader2, Download, ArrowRight, AlertTriangle,
 } from 'lucide-react';
-import { reservationApi } from '@/lib/api';
+import { reservationApi, authApi } from '@/lib/api';
 import { Reservation } from '@/types';
 import { formatPrice, formatDate, isLoggedIn } from '@/lib/auth';
 import toast from 'react-hot-toast';
@@ -17,19 +17,192 @@ const REASON_LABELS: Record<string, { label: string; icon: string }> = {
   body_damage: { label: 'Dommages carrosserie', icon: '🔨' },
 };
 
+const REASON_TEXT: Record<string, string> = {
+  engine_failure: 'Panne moteur',
+  accident: 'Accident de la route',
+  body_damage: 'Dommages carrosserie',
+};
+
+function fmt(d: string | undefined) {
+  if (!d) return '___________';
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+async function generateContractPdf(reservation: any, user: any) {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const W = 210;
+  const margin = 20;
+  const contentW = W - margin * 2;
+  let y = 20;
+
+  const LINE_H = 6;
+
+  const addLine = (h = LINE_H) => { y += h; };
+
+  const text = (str: string, x: number, fontSize = 10, style: 'normal' | 'bold' = 'normal', align: 'left' | 'center' | 'right' = 'left') => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', style);
+    doc.text(str || '', x, y, { align });
+  };
+
+  const fieldRow = (label: string, value: string) => {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, margin, y);
+    doc.setFont('helvetica', 'normal');
+    const val = value || '___________';
+    doc.text(val, margin + contentW * 0.55, y);
+    doc.setDrawColor(150);
+    doc.line(margin + contentW * 0.55, y + 1, margin + contentW, y + 1);
+    doc.setDrawColor(0);
+    y += LINE_H;
+  };
+
+  const sectionTitle = (title: string) => {
+    y += 3;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), margin, y);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y + 1, margin + contentW, y + 1);
+    y += LINE_H + 1;
+  };
+
+  // ── EN-TÊTE ──
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CONTRAT DE LOCATION TAXI RELAIS', W / 2, y, { align: 'center' });
+  y += 7;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const headerLines = [
+    'TAXI RENT — 7 Allée de Lille — 91170 Viry-Chatillon',
+    'Enregistré au RCS d\'Evry — Location de véhicule courte durée — Siren 921300190',
+  ];
+  for (const line of headerLines) {
+    doc.text(line, W / 2, y, { align: 'center' });
+    y += 5;
+  }
+  y += 3;
+
+  // ── CONDITIONS ──
+  const depositAmount = parseFloat(reservation.deposit_amount || 1000);
+  const conditions = [
+    `Le loueur met à disposition du locataire un véhicule équipé taxi en conformité avec la réglementation en vigueur : taximètre, lumineux, imprimante, et contrôles techniques à jour. Le véhicule est assuré par le locataire (transfert de son assurance tous risques de son taxi immobilisé), il devra immédiatement signaler tout incident à son assurance et au loueur.`,
+    `Au départ de la location le locataire devra laisser un chèque de caution de ${depositAmount.toLocaleString('fr-FR')}€.`,
+    `Le véhicule devra être restitué dans l'état où il a été emprunté. En cas contraire le loueur pourra facturer les frais de remise en état (Frais de Nettoyage forfaitaire 50€).`,
+    `Le véhicule relais devra toujours être restitué plein fait, sinon 2€/Litre manquant sera facturé.`,
+    `La location s'entend kilométrage illimité. Le locataire doit transmettre le contrat à la Mairie de la Commune de Stationnement.`,
+    `LE LOCATAIRE S'ENGAGE A ALLER MODIFIER LES TARIFS PREFECTORAUX DE SON DEPARTEMENT CHEZ JPM TAXI.`,
+  ];
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  for (const para of conditions) {
+    const lines = doc.splitTextToSize(para, contentW) as string[];
+    for (const line of lines) {
+      doc.text(line, margin, y);
+      y += 4.5;
+    }
+    y += 1.5;
+  }
+
+  // ── VÉHICULE ──
+  sectionTitle('Véhicule loué');
+  fieldRow('Véhicule loué', `${reservation.make || ''} ${reservation.model || ''}`);
+  fieldRow('Immatriculation', reservation.license_plate || '');
+  fieldRow('Prix par Jour', `${parseFloat(reservation.price_per_day || 0).toFixed(0)}€ Hors Taxe`);
+  fieldRow('DATE DE DEBUT DU CONTRAT', fmt(reservation.start_date));
+  fieldRow('DATE PRÉVU DE RETOUR', fmt(reservation.end_date));
+
+  // ── LOCATAIRE ──
+  sectionTitle('Locataire');
+  fieldRow('NOM', `${user?.first_name || ''} ${user?.last_name || ''}`);
+  fieldRow('ADRESSE', user?.address || user?.commune || '');
+  fieldRow('PERMIS DE CONDUIRE N°', user?.driver_license_number || '');
+  fieldRow('DÉLIVRÉ LE', user?.driver_license_date ? fmt(user.driver_license_date) : '');
+  fieldRow('CARTE PROFESSIONNELLE N°', user?.professional_card_number || '');
+  fieldRow('COMMUNE DE STATIONNEMENT DU VÉHICULE IMMOBILISÉ', user?.commune || '');
+  fieldRow('IMMATRICULATION DU VÉHICULE IMMOBILISÉ', reservation.immobilized_plate || '');
+  fieldRow('NUMÉRO CONVENTIONNEMENT', user?.license_number || '');
+  const lieuCause = [reservation.vehicle_location, REASON_TEXT[reservation.reason]].filter(Boolean).join(' – ');
+  fieldRow("LIEU D'IMMOBILISATION + CAUSE", lieuCause);
+
+  y += 4;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOUS DOMMAGES SONT À REMBOURSER PAR LE LOCATAIRE', margin, y);
+  y += 10;
+
+  // ── SIGNATURES ──
+  const sigY = y;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+
+  // Locataire
+  doc.text('Locataire', margin + 20, sigY, { align: 'center' });
+  doc.line(margin, sigY + 20, margin + 55, sigY + 20);
+  doc.setFontSize(8);
+  doc.text('Signature', margin + 20, sigY + 24, { align: 'center' });
+
+  // Loueur
+  doc.setFontSize(9);
+  doc.text('Loueur', margin + contentW - 20, sigY, { align: 'center' });
+  doc.line(margin + contentW - 55, sigY + 20, margin + contentW, sigY + 20);
+  doc.setFontSize(8);
+  doc.text('Monir El Bahije', margin + contentW - 20, sigY + 24, { align: 'center' });
+
+  y = sigY + 32;
+
+  // ── RETOUR ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('RETOUR Véhicule :', margin, y);
+  doc.line(margin + 42, y + 1, margin + contentW, y + 1);
+  y += 8;
+  doc.text('SINISTRE RESPONSABLE :', margin, y);
+  doc.line(margin + 52, y + 1, margin + contentW, y + 1);
+  y += 8;
+  doc.text('CARBURANT :', margin, y);
+  doc.line(margin + 28, y + 1, margin + contentW, y + 1);
+
+  const refId = reservation.id?.slice(0, 8).toUpperCase() || '';
+  doc.save(`contrat-taxirent-${refId}.pdf`);
+}
+
 export default function ConfirmationPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/auth/login'); return; }
-    reservationApi.get(id)
-      .then((res) => setReservation(res.data))
+    Promise.all([reservationApi.get(id), authApi.getMe()])
+      .then(([resRes, meRes]) => {
+        setReservation(resRes.data);
+        setUser(meRes.data);
+      })
       .catch(() => { toast.error('Réservation introuvable'); router.push('/reservations'); })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleDownloadPdf = async () => {
+    if (!reservation) return;
+    setPdfLoading(true);
+    try {
+      await generateContractPdf(reservation, user);
+    } catch {
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -43,7 +216,6 @@ export default function ConfirmationPage() {
 
   const refId = reservation.id.slice(0, 8).toUpperCase();
   const reason = reservation.reason ? REASON_LABELS[reservation.reason] : null;
-  const contractUrl = reservationApi.getContractUrl(id);
 
   return (
     <div className="pt-16 min-h-screen bg-gradient-to-b from-green-50 to-gray-50">
@@ -78,15 +250,14 @@ export default function ConfirmationPage() {
           <p className="text-sm text-gray-500 mb-4">
             Téléchargez votre contrat, imprimez-le et présentez-le signé lors de la prise en charge du véhicule.
           </p>
-          <a
-            href={contractUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-dark-900 text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-dark-800 transition"
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="inline-flex items-center gap-2 bg-dark-900 text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-dark-800 transition disabled:opacity-60"
           >
-            <Download className="w-4 h-4" />
-            Télécharger le contrat PDF
-          </a>
+            {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {pdfLoading ? 'Génération en cours...' : 'Télécharger le contrat PDF'}
+          </button>
         </div>
 
         {/* Reservation summary */}
@@ -127,11 +298,6 @@ export default function ConfirmationPage() {
                   {reservation.pickup_time}
                 </div>
               )}
-              {reservation.pickup_location && (
-                <div className="flex items-center gap-1.5 text-gray-500 text-xs mt-1">
-                  <MapPin className="w-3 h-3" /> {reservation.pickup_location}
-                </div>
-              )}
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Restitution</p>
@@ -145,24 +311,8 @@ export default function ConfirmationPage() {
                   {reservation.return_time}
                 </div>
               )}
-              {reservation.dropoff_location && (
-                <div className="flex items-center gap-1.5 text-gray-500 text-xs mt-1">
-                  <MapPin className="w-3 h-3" /> {reservation.dropoff_location}
-                </div>
-              )}
             </div>
           </div>
-
-          {/* Vehicle location */}
-          {reservation.vehicle_location && (
-            <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-4">
-              <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Véhicule immobilisé</p>
-                <p className="text-sm text-gray-800">{reservation.vehicle_location}</p>
-              </div>
-            </div>
-          )}
 
           {/* Price */}
           <div className="border-t border-gray-100 pt-4">
@@ -182,9 +332,9 @@ export default function ConfirmationPage() {
           <h2 className="font-bold text-gray-900 mb-4">Prochaines étapes</h2>
           <div className="space-y-3">
             {[
-              { step: '1', text: 'Notre équipe vérifie votre dossier et vos documents', done: false },
-              { step: '2', text: 'Vous recevrez une confirmation de disponibilité sous 24h', done: false },
-              { step: '3', text: 'Présentez-vous avec vos documents originaux à la prise en charge', done: false },
+              { step: '1', text: 'Notre équipe vérifie votre dossier et vos documents' },
+              { step: '2', text: 'Vous recevrez une confirmation de disponibilité sous 24h' },
+              { step: '3', text: 'Présentez-vous avec vos documents originaux à la prise en charge' },
             ].map(({ step, text }) => (
               <div key={step} className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-brand-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{step}</div>
