@@ -283,6 +283,12 @@ async function initDb() {
   }
 
   /* ── Seed cars ──────────────────────────────────────────────────────────── */
+
+  // Remove clone cars that were added in a previous seed run
+  const CLONE_PLATES = ['SK-003-OCT','TY-004-C18','TY-005-C12','MB-002-CLE',
+                        'SK-005-OCT','TY-007-C18','SK-006-KOD','TY-008-C12','TS-003-MY'];
+  await pool.query(`DELETE FROM cars WHERE license_plate = ANY($1)`, [CLONE_PLATES]);
+
   const octaviaImg = JSON.stringify(['https://images.unsplash.com/photo-1528820846917-a476472ee6b3?auto=format&fit=crop&w=800&q=80']);
   const kodiacImg  = JSON.stringify(['https://images.unsplash.com/photo-1698413935252-04ed6377296d?auto=format&fit=crop&w=800&q=80']);
   const corollaImg = JSON.stringify(['https://images.unsplash.com/photo-1776043669128-b6b1f73bd8dd?auto=format&fit=crop&w=800&q=80']);
@@ -291,6 +297,9 @@ async function initDb() {
   const mercedesImg= JSON.stringify(['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80']);
   const peugeotImg = JSON.stringify(['https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=800&q=80']);
   const teslaM3Img = JSON.stringify(['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80']);
+  const renaultImg = JSON.stringify(['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80']);
+  const hyundaiImg = JSON.stringify(['https://images.unsplash.com/photo-1629297696754-8f8b6cad0c23?auto=format&fit=crop&w=800&q=80']);
+  const kiaImg     = JSON.stringify(['https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80']);
 
   // [make, model, year, color, license_plate, category, transmission, fuel_type,
   //  seats, doors, price_per_day, deposit_amount, description, features, images, city, is_available]
@@ -312,71 +321,53 @@ async function initDb() {
      'Tesla Model Y 100% électrique équipée taxi. Autonomie 500km, recharge rapide. Zéro émission pour circuler en ZFE.',
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide','Climatisation']),teslaImg,'Paris',1],
     ['Toyota','Prius',2021,'Argent','TY-003-PRI','hybrid','automatic','hybrid',5,4,72,1500,
-     'Toyota Prius hybride équipée taxi. Idéale pour Paris intra-muros et ZFE. Consommation minimale.',
+     'Toyota Prius hybride équipée taxi. En maintenance préventive, disponible prochainement.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Paris',0],
     ['Tesla','Model 3',2023,'Blanc','TS-002-M3','electric','automatic','electric',5,4,110,1500,
-     'Tesla Model 3 100% électrique. Accélération instantanée, recharge rapide. Parfaite pour les clients exigeants.',
+     'Tesla Model 3 100% électrique équipée taxi. En attente de mise en service.',
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide']),teslaM3Img,'Paris',0],
 
     // ── Boulogne-Billancourt ────────────────────────────────────────────────
     ['Mercedes','Classe E',2021,'Noir','MB-001-CLE','sedan','automatic','diesel',5,4,105,1500,
-     'Mercedes Classe E équipée taxi haut de gamme. Confort exceptionnel pour une clientèle premium.',
-     JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Toit ouvrant']),mercedesImg,'Boulogne-Billancourt',0],
-    ['Skoda','Octavia',2020,'Gris','SK-003-OCT','sedan','automatic','diesel',5,4,68,1500,
-     "Skoda Octavia 2.0 TDI automatique équipée taxi. Confort de conduite optimisé pour les longues journées.",
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Boîte automatique']),octaviaImg,'Boulogne-Billancourt',1],
+     'Mercedes Classe E 220d équipée taxi. En révision complète, retour en flotte sous 10 jours.',
+     JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir']),mercedesImg,'Boulogne-Billancourt',0],
 
     // ── Créteil ────────────────────────────────────────────────────────────
-    ['Toyota','Corolla 180ch',2022,'Blanc','TY-004-C18','hybrid','automatic','hybrid',5,4,75,1500,
-     'Toyota Corolla hybride dernière génération. Faible consommation, zéro émission en ville. Équipée taxi complète.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride','Caméra de recul']),corollaImg,'Créteil',1],
-    ['Peugeot','508',2020,'Noir','PE-001-508','sedan','automatic','diesel',5,4,78,1500,
-     'Peugeot 508 berline premium équipée taxi. Design élégant et confort supérieur pour vos clients.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif']),peugeotImg,'Créteil',0],
+    ['Peugeot','508',2021,'Noir','PE-001-508','sedan','automatic','diesel',5,4,78,1500,
+     'Peugeot 508 berline premium équipée taxi. Design élégant, confort supérieur et faible consommation.',
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif','Caméra de recul']),peugeotImg,'Créteil',1],
 
     // ── Nanterre ───────────────────────────────────────────────────────────
-    ['Toyota','Corolla 122ch',2020,'Blanc','TY-005-C12','hybrid','automatic','hybrid',5,4,70,1500,
-     'Toyota Corolla hybride 122ch équipée taxi. Fiabilité légendaire Toyota, idéale pour la Défense et environs.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),corollaImg,'Nanterre',1],
-    ['Skoda','Superb',2019,'Noir','SK-004-SUP','sedan','automatic','diesel',5,4,82,1500,
-     'Skoda Superb berline spacieuse équipée taxi. Habitacle généreux, idéale pour les trajets longue distance.',
+    ['Renault','Talisman',2020,'Gris','RN-001-TAL','sedan','automatic','diesel',5,4,68,1500,
+     'Renault Talisman berline équipée taxi. Spacieuse et confortable, idéale pour la Défense et les déplacements professionnels.',
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur de vitesse']),renaultImg,'Nanterre',1],
+    ['Skoda','Superb',2020,'Noir','SK-004-SUP','sedan','automatic','diesel',5,4,82,1500,
+     'Skoda Superb berline spacieuse équipée taxi. En révision, retour prévu prochainement.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Sièges chauffants','Grand coffre']),octaviaImg,'Nanterre',0],
 
     // ── Versailles ─────────────────────────────────────────────────────────
     ['Toyota','Prius',2022,'Blanc','TY-006-PRI','hybrid','automatic','hybrid',5,4,72,1500,
-     'Toyota Prius hybride équipée taxi. Parfaite pour desservir Versailles et le 78. Très économique.',
+     'Toyota Prius hybride équipée taxi. Parfaite pour desservir Versailles, le 78 et au-delà.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Versailles',1],
-    ['Mercedes','Classe E',2020,'Noir','MB-002-CLE','sedan','automatic','diesel',5,4,105,1500,
-     'Mercedes Classe E équipée taxi. Véhicule en révision, disponible prochainement.',
-     JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir']),mercedesImg,'Versailles',0],
 
     // ── Bobigny ────────────────────────────────────────────────────────────
-    ['Skoda','Octavia',2019,'Gris','SK-005-OCT','sedan','manual','diesel',5,4,63,1500,
-     "Skoda Octavia 1.6 TDI manuelle équipée taxi. Véhicule robuste et économique pour le 93.",
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth']),octaviaImg,'Bobigny',1],
-    ['Toyota','Corolla 180ch',2021,'Blanc','TY-007-C18','hybrid','automatic','hybrid',5,4,75,1500,
-     'Toyota Corolla hybride 180ch équipée taxi. Actuellement en maintenance préventive.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),corollaImg,'Bobigny',0],
+    ['Hyundai','Ioniq',2021,'Blanc','HY-001-ION','hybrid','automatic','hybrid',5,4,70,1500,
+     'Hyundai Ioniq hybride équipée taxi. Faibles émissions, idéale pour le 93 et les zones ZFE.',
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride','Caméra de recul']),hyundaiImg,'Bobigny',1],
 
     // ── Évry ───────────────────────────────────────────────────────────────
-    ['Skoda','Kodiaq',2021,'Noir','SK-006-KOD','suv','automatic','petrol',5,5,90,1500,
-     'Skoda Kodiaq SUV équipé taxi. Idéal pour les familles et les transferts aéroport Orly.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','7 places','Grand coffre']),kodiacImg,'Évry',1],
     ['Peugeot','3008',2022,'Gris','PE-002-300','suv','automatic','hybrid',5,5,88,1500,
-     'Peugeot 3008 hybride rechargeable équipé taxi. SUV moderne et économique pour le 91.',
+     'Peugeot 3008 hybride rechargeable équipé taxi. SUV moderne, idéal pour les transferts aéroport Orly.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride rechargeable','Caméra 360°']),peugeotImg,'Évry',1],
 
     // ── Cergy ──────────────────────────────────────────────────────────────
-    ['Toyota','Corolla 122ch',2021,'Blanc','TY-008-C12','hybrid','automatic','hybrid',5,4,70,1500,
-     'Toyota Corolla hybride équipée taxi. Desservez Cergy-Pontoise et le Val-d\'Oise efficacement.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),corollaImg,'Cergy',1],
-    ['Tesla','Model Y',2023,'Blanc','TS-003-MY','electric','automatic','electric',5,5,120,1500,
-     'Tesla Model Y électrique équipée taxi. En attente de mise en circulation, disponible sous 48h.',
-     JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide']),teslaImg,'Cergy',0],
+    ['Kia','e-Niro',2022,'Blanc','KI-001-ENI','electric','automatic','electric',5,4,85,1500,
+     'Kia e-Niro 100% électrique équipée taxi. Autonomie 455km, zéro émission. Idéale pour le Val-d\'Oise.',
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Électrique','Recharge rapide']),kiaImg,'Cergy',1],
 
     // ── Issy-les-Moulineaux ────────────────────────────────────────────────
     ['Mercedes','Classe E',2022,'Noir','MB-003-CLE','sedan','automatic','hybrid',5,4,110,1500,
-     'Mercedes Classe E hybride équipée taxi haut de gamme. Pour les déplacements professionnels exigeants.',
+     'Mercedes Classe E hybride équipée taxi. Confort et élégance pour vos déplacements professionnels.',
      JSON.stringify(['Équipement taxi complet','Climatisation bi-zone','GPS','Bluetooth','Sièges cuir','Hybride']),mercedesImg,'Issy-les-Moulineaux',1],
   ];
 
