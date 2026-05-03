@@ -117,7 +117,7 @@ function makeShutdown(procs) {
 
 /* ── Main ──────────────────────────────────────────────────────────────── */
 async function main() {
-  console.log(`\n${C.bold}${C.green}◆  Car Rental — Dev Launcher${C.reset}\n`);
+  console.log(`\n${C.bold}${C.green}◆  Taxirent — Dev Launcher${C.reset}\n`);
 
   /* Check / clear busy ports */
   const [beBusy, feBusy] = await Promise.all([

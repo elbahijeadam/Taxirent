@@ -1,4 +1,4 @@
-# AutoRent — Fullstack Car Rental App
+# Taxirent — Plateforme de location taxi relais
 
 ## Stack
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS

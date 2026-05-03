@@ -1,5 +1,5 @@
 {
-  "name": "car-rental-backend",
+  "name": "taxirent-backend",
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
@@ -20,6 +20,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.7",
     "pdf-parse": "^2.4.5",
+    "pg": "^8.20.0",
     "stripe": "^14.9.0",
     "tesseract.js": "^4.1.4",
     "twilio": "^6.0.0",

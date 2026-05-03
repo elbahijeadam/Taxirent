@@ -17,7 +17,7 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.some(o => origin.startsWith(o)) || origin.endsWith('.vercel.app')) {
+    if (!origin || allowedOrigins.some(o => origin === o) || origin.endsWith('.vercel.app')) {
       cb(null, true);
     } else {
       cb(new Error('CORS: origin not allowed'));
@@ -85,9 +85,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+const { initDb } = require('./config/database');
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+
+initDb()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  })
+  .catch((err) => {
+    console.error('[FATAL] Database init failed:', err.message);
+    process.exit(1);
+  });
 
 module.exports = app;

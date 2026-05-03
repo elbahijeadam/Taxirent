@@ -1,7 +1,6 @@
 'use strict';
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const { db, query } = require('../config/database');
+const { query, pool } = require('../config/database');
 const { autoValidateDocument } = require('../services/documentVerificationService');
 
 const API_BASE = process.env.API_URL || 'http://localhost:5000';
@@ -405,38 +404,44 @@ const resetDatabase = async (req, res) => {
   const adminId = req.user.id;
   console.log(`[DEV] Database reset requested by admin ${adminId}`);
 
+  const client = await pool.connect();
   try {
-    db.exec('BEGIN');
+    await client.query('BEGIN');
 
-    db.exec('DELETE FROM email_logs');
-    db.exec('DELETE FROM payments');
-    db.exec('DELETE FROM otp_codes');
-    db.exec('DELETE FROM reservations');
-    db.exec('DELETE FROM documents');
-    db.exec('DELETE FROM cars');
-    db.prepare('DELETE FROM users WHERE id != ?').run(adminId);
+    await client.query('DELETE FROM email_logs');
+    await client.query('DELETE FROM payments');
+    await client.query('DELETE FROM otp_codes');
+    await client.query('DELETE FROM reservations');
+    await client.query('DELETE FROM documents');
+    await client.query('DELETE FROM cars');
+    await client.query('DELETE FROM users WHERE id != $1', [adminId]);
 
-    const insertCar = db.prepare(`
-      INSERT INTO cars
-        (id, make, model, year, color, license_plate, category,
-         transmission, fuel_type, seats, doors,
-         price_per_day, deposit_amount, description, features, images, city)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `);
-    insertCar.run(uuidv4(), 'Skoda',  'Octavia',     2018, 'Gris Vert', 'SK-001-OCT', 'sedan',    'manual',    'diesel',   5, 4, 0, 0, 'Berline Skoda Octavia 1.6 TDI.',  '[]', '[]', 'Paris');
-    insertCar.run(uuidv4(), 'Skoda',  'Kodiaq',      2020, 'Noir',      'SK-002-KOD', 'suv',      'automatic', 'petrol',   5, 5, 0, 0, 'SUV Skoda Kodiaq 1.5 TSI E85.',   '[]', '[]', 'Paris');
-    insertCar.run(uuidv4(), 'Toyota', 'Corolla 180', 2020, 'Blanc',     'TY-001-C18', 'hybrid',   'automatic', 'hybrid',   5, 4, 0, 0, 'Toyota Corolla hybride 180ch.',    '[]', '[]', 'Lyon');
-    insertCar.run(uuidv4(), 'Toyota', 'Corolla 122', 2019, 'Blanc',     'TY-002-C12', 'hybrid',   'automatic', 'hybrid',   5, 4, 0, 0, 'Toyota Corolla hybride 122ch.',    '[]', '[]', 'Lyon');
-    insertCar.run(uuidv4(), 'Tesla',  'Model Y',     2024, 'Noir',      'TS-001-MY',  'electric', 'automatic', 'electric', 5, 5, 0, 0, 'Tesla Model Y 100% électrique.',   '[]', '[]', 'Marseille');
+    const CARS = [
+      ['Skoda','Octavia',2018,'Noir','SK-001-OCT','sedan','manual','diesel',5,4,65,1500,'Berline Skoda Octavia 1.6 TDI équipée taxi.','[]','[]','Paris'],
+      ['Skoda','Kodiaq',2020,'Noir','SK-002-KOD','suv','automatic','petrol',5,5,90,1500,'SUV Skoda Kodiaq équipé taxi.','[]','[]','Paris'],
+      ['Toyota','Corolla 180ch',2020,'Blanc','TY-001-C18','hybrid','automatic','hybrid',5,4,75,1500,'Toyota Corolla hybride 180ch équipée taxi.','[]','[]','Paris'],
+      ['Toyota','Corolla 122ch',2019,'Blanc','TY-002-C12','hybrid','automatic','hybrid',5,4,70,1500,'Toyota Corolla hybride 122ch équipée taxi.','[]','[]','Paris'],
+      ['Tesla','Model Y',2024,'Noir','TS-001-MY','electric','automatic','electric',5,5,120,1500,'Tesla Model Y 100% électrique équipée taxi.','[]','[]','Paris'],
+    ];
+    for (const [make,model,year,color,lp,cat,trans,fuel,seats,doors,ppd,dep,desc,feat,imgs,city] of CARS) {
+      await client.query(
+        `INSERT INTO cars
+           (make,model,year,color,license_plate,category,transmission,fuel_type,
+            seats,doors,price_per_day,deposit_amount,description,features,images,city)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+        [make,model,year,color,lp,cat,trans,fuel,seats,doors,ppd,dep,desc,feat,imgs,city]
+      );
+    }
 
-    db.exec('COMMIT');
-
+    await client.query('COMMIT');
     console.log(`[DEV] Database reset completed by admin ${adminId}`);
     res.json({ success: true, message: 'Database reset completed' });
   } catch (err) {
-    try { db.exec('ROLLBACK'); } catch {}
+    await client.query('ROLLBACK').catch(() => {});
     console.error('[DEV] resetDatabase error:', err);
     res.status(500).json({ error: 'Reset failed' });
+  } finally {
+    client.release();
   }
 };
 

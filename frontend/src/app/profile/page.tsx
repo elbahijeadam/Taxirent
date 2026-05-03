@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User, FileText, Shield, Save, Loader2, CheckCircle, XCircle, Mail, Phone } from 'lucide-react';
 import { userApi } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,10 +16,14 @@ const TABS = [
   { id: 'documents', label: 'Documents', icon: FileText },
 ];
 
-export default function ProfilePage() {
+function ProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading } = useAuth();
-  const [tab, setTab] = useState('info');
+  const [tab, setTab] = useState(() => {
+    const t = searchParams.get('tab');
+    return t && ['info', 'professional', 'documents'].includes(t) ? t : 'info';
+  });
   const [form, setForm] = useState<Partial<UserType>>({});
   const [saving, setSaving] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -219,5 +223,13 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProfilePageWrapper() {
+  return (
+    <Suspense>
+      <ProfilePage />
+    </Suspense>
   );
 }

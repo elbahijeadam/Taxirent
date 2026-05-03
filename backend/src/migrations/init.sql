@@ -1,4 +1,4 @@
--- Car Rental Database Schema
+-- Taxirent Database Schema
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

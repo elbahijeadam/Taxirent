@@ -6,7 +6,9 @@ export interface User {
   phone?: string;
   date_of_birth?: string;
   place_of_birth?: string;
+  address?: string;
   driver_license_number?: string;
+  driver_license_date?: string;
   professional_card_number?: string;
   license_number?: string;
   commune?: string;
@@ -92,9 +94,13 @@ export interface Reservation {
   deposit_amount: number;
   status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
   payment_status: 'unpaid' | 'prepaid' | 'paid' | 'refunded';
+  immobilized_plate?: string;
+  admin_note?: string;
   notes?: string;
   created_at: string;
   contractReady?: boolean;
+  depositClientSecret?: string;
+  depositAmount?: number;
   // Joined fields
   make?: string;
   model?: string;

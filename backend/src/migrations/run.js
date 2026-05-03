@@ -3,7 +3,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const DB_PATH = path.resolve(__dirname, '../../data/car_rental.db');
+const DB_PATH = path.resolve(__dirname, '../../data/taxirent.db');
 
 if (fs.existsSync(DB_PATH)) {
   fs.unlinkSync(DB_PATH);

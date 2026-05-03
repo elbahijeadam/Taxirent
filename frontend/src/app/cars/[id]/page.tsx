@@ -5,7 +5,7 @@ import { DayPicker, DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { fr } from 'date-fns/locale';
 import { Users, Settings, Fuel, Shield, Check, ArrowRight, Loader2, Clock, MapPin, AlertTriangle, Building2 } from 'lucide-react';
-import { carApi, reservationApi } from '@/lib/api';
+import { carApi, reservationApi, authApi } from '@/lib/api';
 import { Car } from '@/types';
 import { formatPrice, isLoggedIn, isVerified } from '@/lib/auth';
 import toast from 'react-hot-toast';
@@ -28,6 +28,7 @@ export default function CarDetailPage() {
   const [range, setRange] = useState<DateRange | undefined>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [profileUser, setProfileUser] = useState<any>(null);
 
   // B2B fields
   const [reason, setReason] = useState('');
@@ -38,10 +39,14 @@ export default function CarDetailPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    Promise.all([carApi.get(id), carApi.getAvailability(id)])
-      .then(([carRes, availRes]) => {
+    const promises: Promise<any>[] = [carApi.get(id), carApi.getAvailability(id)];
+    if (isLoggedIn()) promises.push(authApi.getMe());
+
+    Promise.all(promises)
+      .then(([carRes, availRes, meRes]) => {
         setCar(carRes.data);
         setBookedRanges(availRes.data);
+        if (meRes) setProfileUser(meRes.data);
       })
       .catch(() => toast.error('Erreur de chargement'))
       .finally(() => setLoading(false));
@@ -179,6 +184,30 @@ export default function CarDetailPage() {
           <div className="lg:col-span-1">
             <div className="card p-6 sticky top-20 space-y-5">
               <h2 className="text-xl font-bold text-gray-900">Demande de location</h2>
+
+              {/* Profile completeness warning */}
+              {isLoggedIn() && profileUser && (() => {
+                const missing: string[] = [];
+                if (!profileUser.driver_license_number) missing.push('N° permis de conduire');
+                if (!profileUser.driver_license_date) missing.push('Date de délivrance du permis');
+                if (!profileUser.professional_card_number) missing.push('N° carte professionnelle');
+                if (!profileUser.license_number) missing.push('N° conventionnement');
+                if (!profileUser.address && !profileUser.commune) missing.push('Adresse');
+                return missing.length > 0 ? (
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold">Profil incomplet — votre contrat aura des champs vides :</p>
+                      <ul className="mt-1 space-y-0.5">
+                        {missing.map((f) => <li key={f}>• {f}</li>)}
+                      </ul>
+                      <Link href="/profile?tab=professional" className="inline-block mt-2 font-bold underline hover:text-amber-900">
+                        Compléter mon profil →
+                      </Link>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Reason */}
               <div>
