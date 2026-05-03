@@ -335,7 +335,7 @@ async function initDb() {
     // ── Créteil ────────────────────────────────────────────────────────────
     ['Peugeot','508',2021,'Noir','PE-001-508','sedan','automatic','diesel',5,4,78,1500,
      'Peugeot 508 berline premium équipée taxi. Design élégant, confort supérieur et faible consommation.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif','Caméra de recul']),peugeotImg,'Créteil',1],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif','Caméra de recul']),peugeotImg,'Créteil',0],
 
     // ── Nanterre ───────────────────────────────────────────────────────────
     ['Renault','Talisman',2020,'Gris','RN-001-TAL','sedan','automatic','diesel',5,4,68,1500,
