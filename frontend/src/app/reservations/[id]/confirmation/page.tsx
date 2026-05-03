@@ -85,8 +85,11 @@ export default function ConfirmationPage() {
             className="inline-flex items-center gap-2 bg-dark-900 text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-dark-800 transition"
           >
             <Download className="w-4 h-4" />
-            Télécharger le contrat
+            Ouvrir le contrat (PDF)
           </a>
+          <p className="text-xs text-gray-400 mt-2">
+            Une fois ouvert, cliquez sur &quot;Télécharger en PDF&quot; en haut de la page.
+          </p>
         </div>
 
         {/* Reservation summary */}

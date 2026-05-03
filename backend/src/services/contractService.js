@@ -121,13 +121,50 @@ function generateContractHtml({ reservation, user, car }) {
     margin-left: 6px;
   }
 
+  /* ── Print button ── */
+  .print-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #1a1a1a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    z-index: 100;
+    font-size: 13px;
+  }
+  .print-bar span { opacity: 0.75; }
+  .print-btn {
+    background: #e53e3e;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .print-btn:hover { background: #c53030; }
+  body.has-bar { padding-top: 48px; }
+
   @media print {
+    .print-bar { display: none !important; }
+    body { padding-top: 0 !important; font-size: 11.5px; }
     .page { padding: 18px 24px; }
-    body { font-size: 11.5px; }
   }
 </style>
 </head>
-<body>
+<body class="has-bar">
+<div class="print-bar">
+  <span>Contrat de location — Taxirent</span>
+  <button class="print-btn" onclick="window.print()">
+    ⬇ Télécharger en PDF
+  </button>
+</div>
 <div class="page">
 
   <!-- ══ EN-TÊTE ══ -->
