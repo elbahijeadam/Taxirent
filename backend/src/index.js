@@ -93,7 +93,7 @@ initDb()
     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   })
   .catch((err) => {
-    console.error('[FATAL] Database init failed:', err.message);
+    console.error('[FATAL] Database init failed:', err.message || err);
     process.exit(1);
   });
 
