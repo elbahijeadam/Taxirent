@@ -30,7 +30,7 @@ export default function LoginPage() {
         router.push('/cars');
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Identifiants incorrects');
+      toast.error(err.response?.data?.error || 'Identifiants incorrects', { duration: 5000 });
     } finally {
       setLoading(false);
     }
