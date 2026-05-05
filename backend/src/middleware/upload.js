@@ -1,3 +1,4 @@
+'use strict';
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -6,43 +7,29 @@ const fs = require('fs');
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024; // 5MB
 
-/* ── Magic bytes (file signature) validation ─────────────────────────────── */
-// Guards against MIME spoofing: a malicious file uploaded with Content-Type: image/jpeg
-// is still rejected if its actual bytes don't match the declared type.
 const FILE_SIGNATURES = {
   'image/jpeg':      [[0xFF, 0xD8, 0xFF]],
   'image/png':       [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
-  'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
+  'application/pdf': [[0x25, 0x50, 0x44, 0x46]],
 };
 
-function isValidMagicBytes(filePath, mimeType) {
-  try {
-    const headerLen = 12; // enough for all signatures above
-    const buf = Buffer.alloc(headerLen);
-    const fd  = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buf, 0, headerLen, 0);
-    fs.closeSync(fd);
+// Guards against MIME spoofing — checks the buffer directly (works with memoryStorage)
+function isValidMagicBytes(buffer, mimeType) {
+  if (!buffer || buffer.length < 12) return false;
 
-    if (mimeType === 'image/webp') {
-      // RIFF????WEBP — bytes 0-3 are RIFF, bytes 8-11 are WEBP
-      return buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46
-          && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
-    }
-
-    const sigs = FILE_SIGNATURES[mimeType];
-    if (!sigs) return false;
-    return sigs.some((sig) => sig.every((byte, i) => buf[i] === byte));
-  } catch {
-    return false;
+  if (mimeType === 'image/webp') {
+    return buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+        && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
   }
+
+  const sigs = FILE_SIGNATURES[mimeType];
+  if (!sigs) return false;
+  return sigs.some((sig) => sig.every((byte, i) => buffer[i] === byte));
 }
 
-// Runs after multer has written the file to disk. Deletes the file and rejects
-// the request if the actual file content doesn't match the declared MIME type.
 const verifyFileIntegrity = (req, res, next) => {
   if (!req.file) return next();
-  if (!isValidMagicBytes(req.file.path, req.file.mimetype)) {
-    try { fs.unlinkSync(req.file.path); } catch {}
+  if (!isValidMagicBytes(req.file.buffer, req.file.mimetype)) {
     return res.status(400).json({
       error: 'Contenu du fichier invalide. Le fichier est corrompu ou son type est incorrect.',
     });
@@ -50,27 +37,66 @@ const verifyFileIntegrity = (req, res, next) => {
   next();
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(process.cwd(), process.env.UPLOAD_DIR || 'uploads', req.user.id);
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${uuidv4()}${ext}`);
-  },
-});
+/**
+ * Upload a file to S3/R2 (when env vars are set) or local disk (dev fallback).
+ * Returns { url, key, filename } where `url` is what gets stored in the DB.
+ *
+ * Required env vars for S3/R2:
+ *   S3_ENDPOINT         e.g. https://<accountid>.r2.cloudflarestorage.com
+ *   S3_ACCESS_KEY_ID
+ *   S3_SECRET_ACCESS_KEY
+ *   S3_BUCKET           e.g. taxirent-docs
+ *   S3_REGION           auto (R2) or us-east-1 (AWS)
+ *   S3_PUBLIC_URL       e.g. https://pub-xxx.r2.dev  (public bucket base URL)
+ */
+async function uploadToStorage(file, userId) {
+  const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+  const filename = `${uuidv4()}${ext}`;
 
-const fileFilter = (req, file, cb) => {
-  if (ALLOWED_TYPES.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF are allowed.'), false);
+  if (process.env.S3_ENDPOINT && process.env.S3_ACCESS_KEY_ID) {
+    const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+    const s3 = new S3Client({
+      region: process.env.S3_REGION || 'auto',
+      endpoint: process.env.S3_ENDPOINT,
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+      },
+    });
+
+    const key = `documents/${userId}/${filename}`;
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+
+    const base = (process.env.S3_PUBLIC_URL || '').replace(/\/$/, '');
+    const url = base
+      ? `${base}/${key}`
+      : `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${key}`;
+
+    return { url, key, filename };
   }
-};
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: MAX_SIZE } });
+  // Local disk fallback (development / no S3 configured)
+  const dir = path.join(process.cwd(), process.env.UPLOAD_DIR || 'uploads', userId);
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, filename);
+  fs.writeFileSync(filePath, file.buffer);
+  return { url: filePath, key: `${userId}/${filename}`, filename };
+}
+
+// Files are buffered in memory; uploadToStorage handles disk vs cloud
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_TYPES.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF are allowed.'), false);
+  },
+  limits: { fileSize: MAX_SIZE },
+});
 
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -83,4 +109,4 @@ const handleUploadError = (err, req, res, next) => {
   next();
 };
 
-module.exports = { upload, handleUploadError, verifyFileIntegrity };
+module.exports = { upload, handleUploadError, verifyFileIntegrity, uploadToStorage };

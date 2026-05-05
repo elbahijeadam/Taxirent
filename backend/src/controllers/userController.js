@@ -1,5 +1,6 @@
 const { query } = require('../config/database');
 const { autoValidateDocument } = require('../services/documentVerificationService');
+const { uploadToStorage } = require('../middleware/upload');
 
 const VALID_DOC_TYPES = [
   'driver_license_front',
@@ -69,12 +70,14 @@ const uploadDocument = async (req, res) => {
   }
 
   try {
+    const { url: fileUrl } = await uploadToStorage(req.file, req.user.id);
+
     await query('DELETE FROM documents WHERE user_id = $1 AND type = $2', [req.user.id, type]);
 
     const result = await query(
       `INSERT INTO documents (user_id, type, file_name, file_path, mime_type, file_size, status, auto_status)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'pending_review') RETURNING *`,
-      [req.user.id, type, req.file.filename, req.file.path, req.file.mimetype, req.file.size]
+      [req.user.id, type, req.file.originalname, fileUrl, req.file.mimetype, req.file.size]
     );
 
     const doc = result.rows[0];

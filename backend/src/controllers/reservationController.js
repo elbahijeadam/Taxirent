@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail } = require('../services/emailService');
+const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail } = require('../services/emailService');
 const { generateContractHtml } = require('../services/contractService');
 
 const VALID_REASONS = ['engine_failure', 'accident', 'body_damage'];
@@ -245,31 +245,48 @@ const cancelReservation = async (req, res) => {
       }
     }
 
-    // Also cancel any pending full-payment intent
+    // Handle the rental payment intent: void if pending, refund if already captured
+    let refunded = false;
     if (reservation.stripe_payment_intent_id && process.env.STRIPE_SECRET_KEY) {
       try {
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         const pi = await stripe.paymentIntents.retrieve(reservation.stripe_payment_intent_id);
-        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(pi.status)) {
+
+        if (pi.status === 'succeeded') {
+          await stripe.refunds.create({ payment_intent: reservation.stripe_payment_intent_id });
+          await query(
+            `UPDATE payments SET status = 'refunded' WHERE stripe_payment_intent_id = $1`,
+            [reservation.stripe_payment_intent_id]
+          );
+          await query(
+            `UPDATE reservations SET payment_status = 'refunded' WHERE id = $1`,
+            [req.params.id]
+          );
+          refunded = true;
+        } else if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(pi.status)) {
           await stripe.paymentIntents.cancel(reservation.stripe_payment_intent_id);
+          await query(
+            `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
+            [reservation.stripe_payment_intent_id]
+          );
         }
-        await query(
-          `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
-          [reservation.stripe_payment_intent_id]
-        );
       } catch (stripeErr) {
-        console.warn('[CANCEL] Could not void Stripe payment intent:', stripeErr.message);
+        console.warn('[CANCEL] Could not process Stripe payment intent:', stripeErr.message);
       }
     }
 
     const result = await query('SELECT * FROM reservations WHERE id = $1', [req.params.id]);
     const cancelled = result.rows[0];
 
-    // Send cancellation email to user (non-blocking)
+    // Send cancellation (or refund) email to user (non-blocking)
     const userResult = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
     const carResult  = await query('SELECT * FROM cars WHERE id = $1', [reservation.car_id]);
     if (userResult.rows[0] && carResult.rows[0]) {
-      sendCancellationEmail(userResult.rows[0], cancelled, carResult.rows[0]).catch(() => {});
+      if (refunded) {
+        sendRefundEmail(userResult.rows[0], cancelled, carResult.rows[0]).catch(() => {});
+      } else {
+        sendCancellationEmail(userResult.rows[0], cancelled, carResult.rows[0]).catch(() => {});
+      }
     }
 
     res.json(cancelled);

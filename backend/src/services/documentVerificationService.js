@@ -88,10 +88,23 @@ async function extractFromImage(filePath) {
   }
 }
 
+function isRemoteUrl(p) {
+  return p.startsWith('http://') || p.startsWith('https://');
+}
+
+async function getFileBuffer(filePath) {
+  if (isRemoteUrl(filePath)) {
+    const resp = await fetch(filePath);
+    if (!resp.ok) throw new Error(`Download failed: HTTP ${resp.status}`);
+    return Buffer.from(await resp.arrayBuffer());
+  }
+  return fs.readFileSync(filePath);
+}
+
 async function extractFromPdf(filePath) {
   try {
     const pdfParse = require('pdf-parse');
-    const buffer   = fs.readFileSync(filePath);
+    const buffer   = await withTimeout(getFileBuffer(filePath), 30_000);
     const data     = await withTimeout(pdfParse(buffer), 30_000);
     const text     = data.text || '';
     // A text-based PDF with real content gets high confidence
@@ -104,12 +117,12 @@ async function extractFromPdf(filePath) {
 }
 
 async function extractTextFromDocument(filePath, mimeType) {
-  if (!fs.existsSync(filePath)) {
+  if (!isRemoteUrl(filePath) && !fs.existsSync(filePath)) {
     return { text: '', confidence: 0, method: 'none', error: 'File not found' };
   }
   return mimeType === 'application/pdf'
     ? extractFromPdf(filePath)
-    : extractFromImage(filePath);
+    : extractFromImage(filePath); // Tesseract.recognize() accepts URLs natively
 }
 
 /* ── Document data parser ────────────────────────────────────────────────── */
