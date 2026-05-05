@@ -69,6 +69,9 @@ export const carApi = {
   list:            (params?: Record<string, string>) => api.get('/cars', { params }),
   get:             (id: string) => api.get(`/cars/${id}`),
   getAvailability: (id: string) => api.get(`/cars/${id}/availability`),
+  create:          (data: Record<string, unknown>) => api.post('/cars', data),
+  update:          (id: string, data: Record<string, unknown>) => api.put(`/cars/${id}`, data),
+  delete:          (id: string) => api.delete(`/cars/${id}`),
 };
 
 // Reservations

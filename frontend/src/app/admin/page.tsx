@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, Calendar, FileText, Clock, CheckCircle, XCircle, TrendingUp, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, Calendar, FileText, Clock, CheckCircle, XCircle, TrendingUp, ArrowRight, Loader2, AlertTriangle, Car } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { AdminStats } from '@/types';
 
@@ -66,6 +66,7 @@ export default function AdminDashboard() {
   const u = stats?.users;
   const r = stats?.reservations;
   const d = stats?.documents;
+  const c = stats?.cars;
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -124,6 +125,14 @@ export default function AdminDashboard() {
         <StatCard label="En cours" value={r?.active ?? 0} icon={TrendingUp} color="bg-blue-100 text-blue-600" href="/admin/reservations?status=active" />
       </div>
 
+      {/* Fleet stats */}
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Flotte</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <StatCard label="Total véhicules" value={c?.total ?? 0} icon={Car} color="bg-indigo-100 text-indigo-600" href="/admin/cars" />
+        <StatCard label="Disponibles" value={c?.available ?? 0} icon={CheckCircle} color="bg-green-100 text-green-600" href="/admin/cars" />
+        <StatCard label="Indisponibles" value={c?.unavailable ?? 0} icon={XCircle} color="bg-red-100 text-red-600" href="/admin/cars" />
+      </div>
+
       {/* Quick links */}
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Accès rapide</h2>
       <div className="grid sm:grid-cols-3 gap-4">
@@ -154,6 +163,16 @@ export default function AdminDashboard() {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900">Réservations</p>
             <p className="text-sm text-gray-500">Confirmer ou refuser des demandes</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition flex-shrink-0" />
+        </Link>
+        <Link href="/admin/cars" className="flex items-center gap-4 bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-md transition group">
+          <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Car className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900">Flotte de véhicules</p>
+            <p className="text-sm text-gray-500">Gérer et ajouter des véhicules</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition flex-shrink-0" />
         </Link>

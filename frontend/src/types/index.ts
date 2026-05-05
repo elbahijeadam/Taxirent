@@ -27,6 +27,7 @@ export interface AdminStats {
   users: { total: number; pending: number; approved: number; rejected: number };
   reservations: { total: number; pending: number; confirmed: number; active: number; cancelled: number };
   documents: { pending: number };
+  cars?: { total: number; available: number; unavailable: number };
 }
 
 export interface PendingDocument {

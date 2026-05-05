@@ -8,7 +8,7 @@ const API_BASE = process.env.API_URL || 'http://localhost:5000';
 /* ── Stats ──────────────────────────────────────────────────────────────── */
 const getStats = async (req, res) => {
   try {
-    const [uStats, rStats, dStats] = await Promise.all([
+    const [uStats, rStats, dStats, cStats] = await Promise.all([
       query(`
         SELECT
           COUNT(*) as total,
@@ -27,11 +27,23 @@ const getStats = async (req, res) => {
         FROM reservations
       `),
       query(`SELECT COUNT(*) as pending FROM documents WHERE status = 'pending'`),
+      query(`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as available,
+          SUM(CASE WHEN is_available = 0 THEN 1 ELSE 0 END) as unavailable
+        FROM cars
+      `),
     ]);
     res.json({
       users: uStats.rows[0],
       reservations: rStats.rows[0],
       documents: { pending: Number(dStats.rows[0]?.pending ?? 0) },
+      cars: {
+        total: Number(cStats.rows[0]?.total ?? 0),
+        available: Number(cStats.rows[0]?.available ?? 0),
+        unavailable: Number(cStats.rows[0]?.unavailable ?? 0),
+      },
     });
   } catch (err) {
     console.error('getStats error:', err);
@@ -150,7 +162,7 @@ const listReservations = async (req, res) => {
 
   if (status) { conds.push(`r.status = $${p++}`); params.push(status); }
   if (q) {
-    conds.push(`(u.email LIKE $${p} OR u.first_name LIKE $${p} OR u.last_name LIKE $${p} OR r.id LIKE $${p})`);
+    conds.push(`(u.email LIKE $${p} OR u.first_name LIKE $${p} OR u.last_name LIKE $${p} OR r.id::text LIKE $${p})`);
     params.push(`%${q}%`); p++;
   }
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
@@ -314,8 +326,23 @@ const updateDocumentStatus = async (req, res) => {
 
 const reprocessDocument = async (req, res) => {
   try {
-    const check = await query('SELECT id FROM documents WHERE id = $1', [req.params.id]);
+    const check = await query(
+      `SELECT id, extracted_text, extracted_data, confidence_score, auto_status, verification_log
+       FROM documents WHERE id = $1`,
+      [req.params.id]
+    );
     if (!check.rows[0]) return res.status(404).json({ error: 'Document introuvable.' });
+
+    // Archive previous OCR results before wiping so the audit trail is preserved
+    const prev = check.rows[0];
+    const archive = {
+      archived_at: new Date().toISOString(),
+      archived_by: req.user.id,
+      previous_auto_status: prev.auto_status,
+      previous_confidence_score: prev.confidence_score,
+      previous_extracted_data: prev.extracted_data,
+      previous_verification_log: prev.verification_log ? JSON.parse(prev.verification_log) : null,
+    };
 
     await query(
       `UPDATE documents
@@ -324,15 +351,14 @@ const reprocessDocument = async (req, res) => {
              extracted_text   = NULL,
              extracted_data   = NULL,
              confidence_score = NULL,
-             verification_log = NULL,
+             verification_log = $1,
              admin_note       = NULL
-       WHERE id = $1`,
-      [req.params.id]
+       WHERE id = $2`,
+      [JSON.stringify({ reprocess_archive: archive }), req.params.id]
     );
 
     res.json({ message: 'Retraitement OCR lancé en arrière-plan.' });
 
-    // Fire-and-forget — same pattern as initial upload
     setImmediate(() => {
       autoValidateDocument(req.params.id).catch((err) =>
         console.error('[VERIFY] Reprocess failed for', req.params.id, err.message)

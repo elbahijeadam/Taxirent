@@ -191,6 +191,29 @@ const sendContractEmail = async (user, reservation, car, contractHtml) => {
   });
 };
 
+const sendCancellationEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Annulation confirmée — Réf. ${refId}`,
+    type: 'reservation_cancelled', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <p style="color:#4a5568;line-height:1.6;">Votre réservation a été annulée avec succès.</p>
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Dates prévues</td><td>${formatDate(reservation.start_date)} → ${formatDate(reservation.end_date)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#718096;font-size:13px;">Si vous n'êtes pas à l'origine de cette annulation, contactez-nous immédiatement.</p>
+        <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir les véhicules disponibles</a>
+      </div>${footer}</div>`,
+  });
+};
+
 const sendPaymentConfirmationEmail = async (user, reservation, car) => {
   await sendMail({
     to: user.email,
@@ -208,4 +231,4 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
 
 const SMS_READY = !!twilioClient;
 
-module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, SMS_READY };
+module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, sendCancellationEmail, SMS_READY };

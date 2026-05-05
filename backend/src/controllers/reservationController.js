@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail } = require('../services/emailService');
+const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail } = require('../services/emailService');
 const { generateContractHtml } = require('../services/contractService');
 
 const VALID_REASONS = ['engine_failure', 'accident', 'body_damage'];
@@ -218,15 +218,63 @@ const getContract = async (req, res) => {
 
 const cancelReservation = async (req, res) => {
   try {
-    const update = await query(
-      `UPDATE reservations SET status = 'cancelled' WHERE id = $1 AND user_id = $2
-       AND status IN ('pending', 'confirmed')`,
+    // Fetch reservation BEFORE updating to get Stripe info
+    const existing = await query(
+      `SELECT * FROM reservations WHERE id = $1 AND user_id = $2 AND status IN ('pending', 'confirmed')`,
       [req.params.id, req.user.id]
     );
-    if (!update.rowCount) return res.status(404).json({ error: 'Réservation introuvable ou non annulable.' });
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Réservation introuvable ou non annulable.' });
+    const reservation = existing.rows[0];
+
+    await query(
+      `UPDATE reservations SET status = 'cancelled' WHERE id = $1`,
+      [req.params.id]
+    );
+
+    // Void deposit payment intent on Stripe (non-fatal)
+    if (reservation.deposit_stripe_intent_id && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        await stripe.paymentIntents.cancel(reservation.deposit_stripe_intent_id);
+        await query(
+          `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
+          [reservation.deposit_stripe_intent_id]
+        );
+      } catch (stripeErr) {
+        console.warn('[CANCEL] Could not void Stripe deposit intent:', stripeErr.message);
+      }
+    }
+
+    // Also cancel any pending full-payment intent
+    if (reservation.stripe_payment_intent_id && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const pi = await stripe.paymentIntents.retrieve(reservation.stripe_payment_intent_id);
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(pi.status)) {
+          await stripe.paymentIntents.cancel(reservation.stripe_payment_intent_id);
+        }
+        await query(
+          `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
+          [reservation.stripe_payment_intent_id]
+        );
+      } catch (stripeErr) {
+        console.warn('[CANCEL] Could not void Stripe payment intent:', stripeErr.message);
+      }
+    }
+
     const result = await query('SELECT * FROM reservations WHERE id = $1', [req.params.id]);
-    res.json(result.rows[0]);
+    const cancelled = result.rows[0];
+
+    // Send cancellation email to user (non-blocking)
+    const userResult = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const carResult  = await query('SELECT * FROM cars WHERE id = $1', [reservation.car_id]);
+    if (userResult.rows[0] && carResult.rows[0]) {
+      sendCancellationEmail(userResult.rows[0], cancelled, carResult.rows[0]).catch(() => {});
+    }
+
+    res.json(cancelled);
   } catch (err) {
+    console.error('cancelReservation error:', err);
     res.status(500).json({ error: "Impossible d'annuler la réservation." });
   }
 };

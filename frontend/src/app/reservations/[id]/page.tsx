@@ -21,24 +21,21 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 };
 
 // Stripe payment form component
-function PaymentForm({ reservationId, onSuccess }: { reservationId: string; onSuccess: () => void }) {
+function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
-  const [paymentType, setPaymentType] = useState<'prepayment' | 'full_payment'>('prepayment');
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setLoading(true);
-
     try {
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: { return_url: window.location.href + '?payment=success' },
         redirect: 'if_required',
       });
-
       if (error) {
         toast.error(error.message || 'Paiement échoué');
       } else {
@@ -54,18 +51,6 @@ function PaymentForm({ reservationId, onSuccess }: { reservationId: string; onSu
 
   return (
     <form onSubmit={handlePay} className="space-y-5">
-      <div className="flex gap-3">
-        {[
-          { value: 'prepayment', label: 'Acompte 30%' },
-          { value: 'full_payment', label: 'Paiement complet' },
-        ].map((opt) => (
-          <button type="button" key={opt.value}
-            onClick={() => setPaymentType(opt.value as any)}
-            className={`flex-1 py-3 rounded-xl border-2 text-sm font-semibold transition ${paymentType === opt.value ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-            {opt.label}
-          </button>
-        ))}
-      </div>
       <PaymentElement />
       <button type="submit" disabled={loading || !stripe} className="btn-primary w-full py-4 text-base rounded-xl">
         {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Traitement...</> : 'Payer maintenant'}
@@ -119,10 +104,9 @@ export default function ReservationDetailPage() {
   if (!reservation) return <div className="pt-28 text-center"><p>Réservation introuvable</p><Link href="/reservations" className="btn-primary mt-4 inline-block">Retour</Link></div>;
 
   const statusCfg = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.pending;
-  const canPay = ['pending', 'confirmed'].includes(reservation.status) && ['unpaid'].includes(reservation.payment_status);
+  const canPay = ['pending', 'confirmed'].includes(reservation.status) && ['unpaid', 'prepaid'].includes(reservation.payment_status);
   const canCancel = ['pending', 'confirmed'].includes(reservation.status);
   const totalDays = reservation.total_days;
-  const prepayAmount = (parseFloat(String(reservation.total_amount)) * 0.3).toFixed(2);
 
   return (
     <div className="pt-16 min-h-screen bg-gray-50">
@@ -226,27 +210,17 @@ export default function ReservationDetailPage() {
                 <h2 className="font-bold text-gray-900 mb-5 text-xl">Paiement</h2>
                 {clientSecret ? (
                   <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <PaymentForm reservationId={reservation.id} onSuccess={() => window.location.reload()} />
+                    <PaymentForm onSuccess={() => window.location.reload()} />
                   </Elements>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-gray-600 text-sm">Choisissez votre option de paiement :</p>
-                    <div className="grid gap-3">
-                      <button onClick={() => initPayment('prepayment')} disabled={loadingPayment} className="btn-secondary py-4 rounded-xl text-left flex items-center justify-between px-5">
-                        <div>
-                          <p className="font-bold text-gray-900">Acompte de 30%</p>
-                          <p className="text-sm text-gray-500">Solde à payer à la remise des clés</p>
-                        </div>
-                        <p className="font-bold text-brand-500 text-xl">{formatPrice(Number(prepayAmount))}</p>
-                      </button>
-                      <button onClick={() => initPayment('full_payment')} disabled={loadingPayment} className="btn-primary py-4 rounded-xl text-left flex items-center justify-between px-5">
-                        <div>
-                          <p className="font-bold">Paiement complet</p>
-                          <p className="text-sm text-brand-100">Réservation immédiatement confirmée</p>
-                        </div>
-                        <p className="font-bold text-xl">{formatPrice(reservation.total_amount)}</p>
-                      </button>
-                    </div>
+                    <button onClick={() => initPayment('full_payment')} disabled={loadingPayment} className="btn-primary w-full py-4 rounded-xl flex items-center justify-between px-5">
+                      <div className="text-left">
+                        <p className="font-bold">Payer maintenant</p>
+                        <p className="text-sm text-brand-100">Réservation immédiatement confirmée</p>
+                      </div>
+                      <p className="font-bold text-xl">{formatPrice(reservation.total_amount)}</p>
+                    </button>
                     {loadingPayment && <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>}
                   </div>
                 )}
@@ -274,8 +248,14 @@ export default function ReservationDetailPage() {
                 </div>
                 <div className={`flex justify-between text-xs pt-1`}>
                   <span className="text-gray-400">Statut paiement</span>
-                  <span className={`font-semibold ${reservation.payment_status === 'paid' ? 'text-green-600' : reservation.payment_status === 'prepaid' ? 'text-orange-600' : 'text-red-600'}`}>
-                    {reservation.payment_status === 'paid' ? 'Payé' : reservation.payment_status === 'prepaid' ? 'Acompte versé' : 'Non payé'}
+                  <span className={`font-semibold ${
+                    reservation.payment_status === 'paid' ? 'text-green-600'
+                    : reservation.payment_status === 'prepaid' ? 'text-blue-600'
+                    : 'text-red-600'
+                  }`}>
+                    {reservation.payment_status === 'paid' ? 'Payé'
+                      : reservation.payment_status === 'prepaid' ? 'Acompte versé'
+                      : 'Non payé'}
                   </span>
                 </div>
               </div>

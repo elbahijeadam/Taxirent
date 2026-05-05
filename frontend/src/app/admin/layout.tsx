@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard, Users, Calendar, FileText, LogOut,
-  ExternalLink, Menu, X, ShieldCheck,
+  ExternalLink, Menu, X, ShieldCheck, Car,
 } from 'lucide-react';
 import { getUser, clearAuth } from '@/lib/auth';
 import { adminApi } from '@/lib/api';
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/admin/users',        label: 'Utilisateurs',    icon: Users },
   { href: '/admin/documents',    label: 'Documents',       icon: FileText },
   { href: '/admin/reservations', label: 'Réservations',    icon: Calendar },
+  { href: '/admin/cars',         label: 'Flotte',          icon: Car },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,18 @@
 const { query } = require('../config/database');
 
+// Simple in-memory cache for car listings (60s TTL, invalidated on writes)
+const cache = {};
+const CACHE_TTL = 60_000;
+function cacheGet(key) {
+  const now = Date.now();
+  if (cache[key] && (now - cache[key].ts) < CACHE_TTL) return cache[key].data;
+  return null;
+}
+function cacheSet(key, data) { cache[key] = { data, ts: Date.now() }; }
+function cacheInvalidate() {
+  for (const k of Object.keys(cache)) delete cache[k];
+}
+
 const listCars = async (req, res) => {
   const { category, transmission, fuel_type, min_price, max_price, seats, city, available_from, available_to } = req.query;
 
@@ -28,12 +41,17 @@ const listCars = async (req, res) => {
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const cacheKey = `list:${where}:${params.join(',')}`;
 
   try {
+    const cached = cacheGet(cacheKey);
+    if (cached) return res.json(cached);
+
     const result = await query(
       `SELECT c.* FROM cars c ${where} ORDER BY c.is_available DESC, c.price_per_day ASC`,
       params
     );
+    cacheSet(cacheKey, result.rows);
     res.json(result.rows);
   } catch (err) {
     console.error('List cars error:', err);
@@ -81,6 +99,7 @@ const createCar = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [make, model, year, color, license_plate, category, transmission, fuel_type, seats || 5, doors || 4, price_per_day, deposit_amount || 0, description, JSON.stringify(features || []), city || 'Paris']
     );
+    cacheInvalidate();
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Create car error:', err);
@@ -111,10 +130,31 @@ const updateCar = async (req, res) => {
       params
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Car not found.' });
+    cacheInvalidate();
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update car.' });
   }
 };
 
-module.exports = { listCars, getCar, getCarAvailability, createCar, updateCar };
+// Admin: delete car (only if no active reservations)
+const deleteCar = async (req, res) => {
+  try {
+    const activeRes = await query(
+      `SELECT COUNT(*) FROM reservations WHERE car_id = $1 AND status NOT IN ('cancelled', 'completed')`,
+      [req.params.id]
+    );
+    if (parseInt(activeRes.rows[0].count) > 0) {
+      return res.status(409).json({ error: 'Ce véhicule a des réservations actives. Annulez-les avant de supprimer.' });
+    }
+    const result = await query('DELETE FROM cars WHERE id = $1 RETURNING id', [req.params.id]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'Véhicule introuvable.' });
+    cacheInvalidate();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete car error:', err);
+    res.status(500).json({ error: 'Failed to delete car.' });
+  }
+};
+
+module.exports = { listCars, getCar, getCarAvailability, createCar, updateCar, deleteCar };
