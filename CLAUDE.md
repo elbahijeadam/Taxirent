@@ -1,7 +1,7 @@
 ﻿# CLAUDE.md — Journal de bord Taxirent
 
 > Fichier de contexte pour les sessions Claude. Mis a jour apres chaque session importante.
-> Derniere mise a jour : 2026-05-05
+> Derniere mise a jour : 2026-05-05 (session 3 suite)
 
 ---
 
@@ -127,14 +127,21 @@ Ameliorations implementees :
 ## Taches restantes avant vente
 
 ### CRITIQUE (bloquant)
-- [ ] Stockage cloud pour uploads utilisateurs (Cloudflare R2 ou AWS S3)
-      Actuellement : multer stocke en /tmp ou disque local (Railway ephemere !)
-      Impact : tous les documents uploades sont perdus au redeploy
+- [x] Stockage cloud pour uploads utilisateurs — FAIT
+      upload.js : memoryStorage + uploadToStorage() -> S3/R2 si vars configurees, disque sinon
+      Vars Railway a ajouter : S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET, S3_REGION, S3_PUBLIC_URL
+      Package ajoute : @aws-sdk/client-s3 ^3.600.0
+      RESTE : creer le bucket R2/S3 et configurer les vars sur Railway
 
 ### IMPORTANT (fortement recommande)
-- [ ] Verifier webhook Stripe enregistre dans le dashboard Stripe (URL prod Railway)
+- [x] Fix bug webhook Stripe — FAIT (bug de routing : le handler n'etait jamais atteint)
+      index.js : webhook enregistre directement via app.post() avant express.json()
+      routes/payments.js : route /webhook retiree (elle y etait en double)
+      RESTE : verifier l'URL du webhook dans le dashboard Stripe = https://<railway-url>/api/payments/webhook
+- [x] Stripe refund automatique sur annulation — FAIT
+      reservationController.js cancelReservation : si pi.status === 'succeeded' -> stripe.refunds.create()
+      emailService.js : sendRefundEmail() ajoutee (email remboursement envoye au lieu de annulation)
 - [ ] UI pour que l'utilisateur voit le depot de garantie autorise (vs capture)
-- [ ] Stripe refund automatique sur annulation d'une reservation deja payee
 - [ ] Uploader d'images voitures (actuellement : champ texte URL)
 
 ### AMELIORATIONS (nice-to-have)
