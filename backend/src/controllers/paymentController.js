@@ -2,10 +2,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { query } = require('../config/database');
 const { sendPaymentConfirmationEmail } = require('../services/emailService');
 
-// Create payment intent (full or prepayment)
+// Create payment intent (full payment only)
 const createPaymentIntent = async (req, res) => {
   const { reservation_id, payment_type } = req.body;
-  const VALID_TYPES = ['prepayment', 'full_payment', 'deposit'];
+  const VALID_TYPES = ['full_payment', 'deposit'];
 
   if (!reservation_id || !payment_type || !VALID_TYPES.includes(payment_type)) {
     return res.status(400).json({ error: 'Invalid payment request.' });
@@ -24,9 +24,7 @@ const createPaymentIntent = async (req, res) => {
 
     // Determine amount in cents
     let amountCents;
-    if (payment_type === 'prepayment') {
-      amountCents = Math.round(parseFloat(reservation.total_amount) * 0.3 * 100); // 30% prepayment
-    } else if (payment_type === 'deposit') {
+    if (payment_type === 'deposit') {
       amountCents = Math.round(parseFloat(reservation.deposit_amount) * 100);
     } else {
       amountCents = Math.round(parseFloat(reservation.total_amount) * 100);
