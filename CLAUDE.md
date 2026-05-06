@@ -1,7 +1,7 @@
 ﻿# CLAUDE.md — Journal de bord Taxirent
 
 > Fichier de contexte pour les sessions Claude. Mis a jour apres chaque session importante.
-> Derniere mise a jour : 2026-05-05 (session 3 suite)
+> Derniere mise a jour : 2026-05-06 (session 4)
 
 ---
 
@@ -102,25 +102,52 @@ Taxirent/
 - SEO metadata (layout.tsx par section)
 - Push et deploy sur Railway + Vercel confirmes
 
-### Session 3 (2026-05-05 — session actuelle)
-Ameliorations implementees :
+### Session 3 (2026-05-05)
 - Admin : page /admin/cars complete (liste, creation, edition, suppression, toggle dispo)
-- Admin : stats flotte sur dashboard (total / dispo / indispo)
-- Admin : lien acces rapide "Flotte de vehicules" sur dashboard
-- Backend : carController.js — ajout deleteCar avec garde reservations actives
-- Backend : carController.js — cache in-memory 60s correctement implemente
-- Backend : routes/cars.js — route DELETE /:id ajoutee
-- Backend : adminController.js — bug UUID LIKE corrige (::text LIKE)
-- Backend : adminController.js — reprocessDocument archive avant reset OCR
-- Backend : adminController.js — getStats ajoute query cars stats
-- Backend : reservationController.js — cancelReservation complete (void Stripe + email)
-- Backend : emailService.js — sendCancellationEmail ajoute
-- Frontend : reservations/page.tsx — PAYMENT_CONFIG manquait 'prepaid'
-- Frontend : reservations/[id]/page.tsx — canPay incluait pas 'prepaid'
-- Frontend : reservations/[id]/page.tsx — affichage 'Acompte verse' corrige
-- Frontend : types/index.ts — AdminStats etendu avec cars stats
-- Frontend : api.ts — carApi.create/update/delete ajoutes
-- SEO : layout.tsx root meta, cars/layout.tsx cree
+- Admin : stats flotte + lien acces rapide sur dashboard
+- Backend : carController.js — deleteCar + cache in-memory 60s + route DELETE
+- Backend : adminController.js — bug UUID LIKE corrige + archive OCR + stats cars
+- Backend : reservationController.js — cancelReservation (void Stripe + email)
+- Backend : emailService.js — sendCancellationEmail
+- Frontend : PAYMENT_CONFIG 'prepaid' + canPay fix + affichage 'Acompte verse'
+- Frontend : types/index.ts AdminStats + api.ts carApi CRUD
+- SEO : metadata root + cars/layout.tsx
+
+### Session 3 suite (2026-05-05) — Priorites critiques
+- [x] Stockage cloud S3/R2 : upload.js memoryStorage + uploadToStorage(), @aws-sdk/client-s3
+- [x] Fix webhook Stripe : bug routing corrige (index.js app.post avant express.json)
+- [x] Remboursement auto annulation : stripe.refunds.create() + sendRefundEmail()
+- [x] OCR adapte URLs distantes : extractFromPdf download, Tesseract accepte URLs
+
+### Session 4 (2026-05-06) — Flux depot de garantie complet
+Backend :
+- reservationController.js — getDepositSecret (GET /:id/deposit-secret)
+- reservationController.js — confirmDepositAuthorization (POST /:id/deposit-confirm)
+- adminController.js — captureDeposit + releaseDeposit
+- adminController.js — listReservations inclut deposit_status, deposit_amount
+- routes/reservations.js — nouvelles routes deposit-secret et deposit-confirm
+- routes/admin.js — routes /deposit/capture et /deposit/release
+- paymentController.js — webhook payment_intent.amount_capturable_updated
+Frontend :
+- reservations/[id]/page.tsx — section depot de garantie avec formulaire Stripe (amber)
+  Composant DepositForm, etats depositClientSecret/loadingDeposit
+  Statut depot dans sidebar (En attente / Autorise / Preleve / Libere)
+  Statut 'refunded' affiche (badge violet)
+- admin/reservations/page.tsx — boutons "Marquer en cours" et "Marquer terminee"
+  Boutons "Liberer depot" et "Capturer depot" pour locations active/completed
+  Badge statut depot sur chaque ligne
+- cars/[id]/page.tsx — redirect corrige /confirmation -> /reservations/:id
+- reservations/page.tsx — badge 'refunded' (violet) ajoute
+- types/index.ts — deposit_status, deposit_stripe_intent_id dans Reservation
+- lib/api.ts — reservationApi.getDepositSecret/confirmDeposit, adminApi.captureDeposit/releaseDeposit
+
+Flux deposit complet :
+  User cree reservation -> page /reservations/:id
+  Section orange "Depot de garantie" s'affiche si deposit_status='awaiting_authorization'
+  User clique -> formulaire Stripe -> hold place sur carte (jamais debite)
+  Backend verifie requires_capture -> deposit_status='authorized'
+  Webhook payment_intent.amount_capturable_updated en backup
+  Admin : location en cours -> "Liberer" (pas de dommages) ou "Capturer" (dommages)
 
 ---
 
@@ -134,21 +161,19 @@ Ameliorations implementees :
       RESTE : creer le bucket R2/S3 et configurer les vars sur Railway
 
 ### IMPORTANT (fortement recommande)
-- [x] Fix bug webhook Stripe — FAIT (bug de routing : le handler n'etait jamais atteint)
-      index.js : webhook enregistre directement via app.post() avant express.json()
-      routes/payments.js : route /webhook retiree (elle y etait en double)
-      RESTE : verifier l'URL du webhook dans le dashboard Stripe = https://<railway-url>/api/payments/webhook
+- [x] Fix bug webhook Stripe — FAIT
+      RESTE : verifier l'URL dans dashboard Stripe = https://<railway-url>/api/payments/webhook
 - [x] Stripe refund automatique sur annulation — FAIT
-      reservationController.js cancelReservation : si pi.status === 'succeeded' -> stripe.refunds.create()
-      emailService.js : sendRefundEmail() ajoutee (email remboursement envoye au lieu de annulation)
-- [ ] UI pour que l'utilisateur voit le depot de garantie autorise (vs capture)
+- [x] Flux depot de garantie complet — FAIT (session 4)
 - [ ] Uploader d'images voitures (actuellement : champ texte URL)
+- [ ] Verifier que Twilio est configure en prod (sinon phone_verified jamais true -> aucune reservation possible)
+      Si pas Twilio : envisager de rendre phone_verified optionnel ou OTP par email uniquement
 
 ### AMELIORATIONS (nice-to-have)
 - [ ] Tests automatises (Jest / Playwright)
 - [ ] Pagination API backend pour /admin/reservations et /admin/users
-- [ ] Filtres avances sur listing voitures (rayon GPS, disponibilite temps reel)
-- [ ] Notifications push ou SMS (Twilio) pour statut reservation
+- [ ] Email de rappel J-1 avant prise en charge
+- [ ] Notifications SMS (Twilio) pour changement de statut reservation
 
 ---
 
@@ -160,10 +185,20 @@ Ameliorations implementees :
 - Le schema est dans backend/src/config/database.js (createTables())
 
 ### Stripe
-- Deposits : PaymentIntent avec capture_method: 'manual' -> autorisation seulement
-- Capture : appel stripe.paymentIntents.capture() quand la voiture est rendue
-- Annulation : stripe.paymentIntents.cancel() pour void le hold
+- Deposits : PaymentIntent avec capture_method: 'manual' -> autorisation seulement (hold carte)
+- Webhook payment_intent.amount_capturable_updated -> deposit_status='authorized'
+- Capture admin : stripe.paymentIntents.capture() -> preleve le montant (dommages)
+- Liberation admin : stripe.paymentIntents.cancel() -> void le hold (pas de dommages)
 - Paiement complet : PaymentIntent standard, capture automatique
+- Annulation reservation payee : stripe.refunds.create() -> remboursement + email
+- Webhook URL prod : https://<railway-url>/api/payments/webhook (a verifier dans dashboard Stripe)
+
+### deposit_status (champ reservations)
+- 'awaiting_authorization' : PI cree, utilisateur n'a pas encore autorise
+- 'authorized'             : hold place sur carte (requires_capture sur Stripe)
+- 'captured'               : montant preleve (admin action, en cas de dommages)
+- 'released'               : hold annule (admin action, fin location sans dommages)
+- null                     : pas de depot (reservations admin ou Stripe non configure)
 
 ### Cache
 - carController.js : cache in-memory 60s TTL, invalide sur write (create/update/delete)
@@ -174,10 +209,21 @@ Ameliorations implementees :
 - Score de confiance calcule par heuristique sur les champs extraits
 - Resultat archive dans documents table (extracted_data, confidence_score, verification_log)
 
-### Emails
-- emailService.js : HTTP fetch vers api.resend.com
-- Templates HTML inline avec branding Taxirent
-- Emails : confirmation reservation, OTP auth, annulation, (a venir: rappels)
+### Emails (emailService.js)
+- sendOtpEmail / sendOtpSms
+- sendWelcomeEmail
+- sendReservationEmail
+- sendAdminNotificationEmail
+- sendContractEmail
+- sendCancellationEmail
+- sendRefundEmail (annulation reservation deja payee)
+- sendPaymentConfirmationEmail
+
+### Upload documents
+- multer memoryStorage (pas de disque local)
+- verifyFileIntegrity : magic bytes sur buffer (anti-spoofing MIME)
+- uploadToStorage() : S3/R2 si vars S3_* configurees, sinon disque local (dev)
+- documentVerificationService.js : OCR gere URLs distantes (Tesseract natif, PDF via fetch+buffer)
 
 ---
 
