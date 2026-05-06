@@ -76,10 +76,12 @@ export const carApi = {
 
 // Reservations
 export const reservationApi = {
-  create:         (data: Record<string, unknown>) => api.post('/reservations', data),
-  get:            (id: string) => api.get(`/reservations/${id}`),
-  cancel:         (id: string) => api.patch(`/reservations/${id}/cancel`),
-  getContractUrl: (id: string) => {
+  create:          (data: Record<string, unknown>) => api.post('/reservations', data),
+  get:             (id: string) => api.get(`/reservations/${id}`),
+  cancel:          (id: string) => api.patch(`/reservations/${id}/cancel`),
+  getDepositSecret:(id: string) => api.get(`/reservations/${id}/deposit-secret`),
+  confirmDeposit:  (id: string) => api.post(`/reservations/${id}/deposit-confirm`),
+  getContractUrl:  (id: string) => {
     const token = getToken();
     return `${API_URL}/api/reservations/${id}/contract${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   },
@@ -97,6 +99,8 @@ export const adminApi = {
   listReservations:       (params?: Record<string, string | number>) => api.get('/admin/reservations', { params }),
   updateReservationStatus:(id: string, status: string, admin_note?: string) =>
     api.patch(`/admin/reservations/${id}/status`, { status, admin_note }),
+  captureDeposit:         (id: string) => api.post(`/admin/reservations/${id}/deposit/capture`),
+  releaseDeposit:         (id: string) => api.post(`/admin/reservations/${id}/deposit/release`),
   getPendingDocuments:    (params?: Record<string, string | number>) => api.get('/admin/documents/pending', { params }),
   getDocumentVerification:(id: string) => api.get(`/admin/documents/${id}/verification`),
   updateDocumentStatus:   (id: string, status: string) =>

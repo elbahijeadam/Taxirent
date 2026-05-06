@@ -67,6 +67,25 @@ const handleWebhook = async (req, res) => {
     return res.status(400).json({ error: `Webhook error: ${err.message}` });
   }
 
+  // Deposit authorized (manual capture = hold placed on card, not charged yet)
+  if (event.type === 'payment_intent.amount_capturable_updated') {
+    const pi = event.data.object;
+    if (pi.metadata.type === 'deposit' && pi.metadata.reservation_id) {
+      try {
+        await query(
+          `UPDATE reservations SET deposit_status = 'authorized' WHERE id = $1`,
+          [pi.metadata.reservation_id]
+        );
+        await query(
+          `UPDATE payments SET status = 'authorized' WHERE stripe_payment_intent_id = $1`,
+          [pi.id]
+        );
+      } catch (err) {
+        console.error('Webhook deposit authorization error:', err);
+      }
+    }
+  }
+
   if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object;
     const { reservation_id, payment_type } = pi.metadata;

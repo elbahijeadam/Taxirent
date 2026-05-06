@@ -19,7 +19,7 @@ const PAYMENT_CONFIG: Record<string, { label: string; color: string }> = {
   unpaid:   { label: 'Non payé',     color: 'bg-red-100 text-red-700' },
   prepaid:  { label: 'Acompte versé', color: 'bg-blue-100 text-blue-700' },
   paid:     { label: 'Payé',          color: 'bg-green-100 text-green-700' },
-  refunded: { label: 'Remboursé',     color: 'bg-gray-100 text-gray-600' },
+  refunded: { label: 'Remboursé',     color: 'bg-purple-100 text-purple-700' },
 };
 
 export default function ReservationsPage() {

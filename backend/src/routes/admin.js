@@ -2,7 +2,7 @@ const router = require('express').Router();
 const {
   getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser,
   listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument,
-  listReservations, updateReservationStatus, resetDatabase,
+  listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetDatabase,
 } = require('../controllers/adminController');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
@@ -24,6 +24,8 @@ router.post('/documents/:id/reprocess',      reprocessDocument);
 
 router.get('/reservations', listReservations);
 router.patch('/reservations/:id/status', updateReservationStatus);
+router.post('/reservations/:id/deposit/capture', captureDeposit);
+router.post('/reservations/:id/deposit/release', releaseDeposit);
 
 router.post('/dev/reset-db', resetDatabase);
 

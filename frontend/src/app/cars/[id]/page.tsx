@@ -88,7 +88,7 @@ export default function CarDetailPage() {
         notes: notes || undefined,
       });
       toast.success('Demande enregistrée ! Votre contrat a été envoyé par email.');
-      router.push(`/reservations/${res.data.id}/confirmation`);
+      router.push(`/reservations/${res.data.id}`);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Erreur lors de la réservation');
     } finally {

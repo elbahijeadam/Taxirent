@@ -177,6 +177,7 @@ const listReservations = async (req, res) => {
         `SELECT r.id, r.start_date, r.end_date, r.pickup_time, r.return_time,
                 r.total_days, r.total_amount, r.price_per_day,
                 r.status, r.payment_status, r.reason, r.vehicle_location,
+                r.deposit_status, r.deposit_amount, r.deposit_stripe_intent_id,
                 r.pickup_location, r.notes, r.admin_note, r.created_at,
                 u.id as user_id, u.first_name, u.last_name, u.email, u.status as user_status,
                 c.make, c.model, c.year, c.license_plate, c.color
@@ -421,6 +422,61 @@ const manualVerifyUser = async (req, res) => {
   }
 };
 
+/* ── Deposit management ─────────────────────────────────────────────────── */
+const captureDeposit = async (req, res) => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    const result = await query(
+      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1`,
+      [req.params.id]
+    );
+    const reservation = result.rows[0];
+    if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+    if (!reservation.deposit_stripe_intent_id) return res.status(400).json({ error: 'Aucun dépôt à capturer.' });
+    if (reservation.deposit_status !== 'authorized') {
+      return res.status(400).json({ error: `Dépôt non autorisé (statut : ${reservation.deposit_status}).` });
+    }
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    await stripe.paymentIntents.capture(reservation.deposit_stripe_intent_id);
+    await query(`UPDATE reservations SET deposit_status = 'captured' WHERE id = $1`, [req.params.id]);
+    await query(
+      `UPDATE payments SET status = 'succeeded' WHERE stripe_payment_intent_id = $1`,
+      [reservation.deposit_stripe_intent_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('captureDeposit error:', err);
+    res.status(500).json({ error: 'Impossible de capturer le dépôt.' });
+  }
+};
+
+const releaseDeposit = async (req, res) => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    const result = await query(
+      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1`,
+      [req.params.id]
+    );
+    const reservation = result.rows[0];
+    if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+    if (!reservation.deposit_stripe_intent_id) return res.status(400).json({ error: 'Aucun dépôt à libérer.' });
+    if (!['authorized', 'awaiting_authorization'].includes(reservation.deposit_status)) {
+      return res.status(400).json({ error: `Dépôt non libérable (statut : ${reservation.deposit_status}).` });
+    }
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    await stripe.paymentIntents.cancel(reservation.deposit_stripe_intent_id);
+    await query(`UPDATE reservations SET deposit_status = 'released' WHERE id = $1`, [req.params.id]);
+    await query(
+      `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
+      [reservation.deposit_stripe_intent_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('releaseDeposit error:', err);
+    res.status(500).json({ error: 'Impossible de libérer le dépôt.' });
+  }
+};
+
 /* ── Dev-only DB reset ──────────────────────────────────────────────────── */
 const resetDatabase = async (req, res) => {
   if (process.env.NODE_ENV !== 'development') {
@@ -471,4 +527,4 @@ const resetDatabase = async (req, res) => {
   }
 };
 
-module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, resetDatabase };
+module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetDatabase };

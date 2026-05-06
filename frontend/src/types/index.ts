@@ -102,6 +102,8 @@ export interface Reservation {
   contractReady?: boolean;
   depositClientSecret?: string;
   depositAmount?: number;
+  deposit_status?: 'awaiting_authorization' | 'authorized' | 'captured' | 'released' | null;
+  deposit_stripe_intent_id?: string;
   // Joined fields
   make?: string;
   model?: string;

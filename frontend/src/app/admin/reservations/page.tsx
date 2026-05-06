@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Search, CheckCircle, XCircle, Loader2, ChevronLeft, ChevronRight,
-  RefreshCw, Calendar, Car, User, MapPin, FileText,
+  RefreshCw, Calendar, Car, User, MapPin, FileText, Shield, Play, Flag,
 } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { formatDate, formatPrice } from '@/lib/auth';
@@ -90,6 +90,7 @@ function AdminReservationsContent() {
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
   const [modal, setModal] = useState<{ id: string; action: 'confirmed' | 'cancelled' } | null>(null);
+  const [depositActioning, setDepositActioning] = useState<string | null>(null);
 
   const [filter, setFilter] = useState(searchParams.get('status') || '');
   const [q, setQ]           = useState('');
@@ -113,6 +114,24 @@ function AdminReservationsContent() {
   }, [page, filter, q]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
+
+  const handleDepositAction = async (id: string, action: 'capture' | 'release') => {
+    setDepositActioning(id + action);
+    try {
+      if (action === 'capture') {
+        await adminApi.captureDeposit(id);
+        toast.success('Dépôt capturé — montant prélevé sur la carte du client');
+      } else {
+        await adminApi.releaseDeposit(id);
+        toast.success('Dépôt libéré — hold retiré de la carte du client');
+      }
+      fetchItems();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Action échouée');
+    } finally {
+      setDepositActioning(null);
+    }
+  };
 
   const handleAction = async (id: string, status: 'confirmed' | 'cancelled', admin_note?: string) => {
     setModal(null);
@@ -255,39 +274,76 @@ function AdminReservationsContent() {
                     </td>
                     {/* Actions */}
                     <td className="px-5 py-4">
-                      <div className="flex flex-col gap-2 items-end">
+                      <div className="flex flex-col gap-1.5 items-end">
+                        {/* Status transitions */}
                         {r.status === 'pending' && (
                           <>
-                            <button
-                              onClick={() => setModal({ id: r.id, action: 'confirmed' })}
-                              disabled={actioning === r.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap"
-                            >
-                              {actioning === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                              Confirmer
+                            <button onClick={() => setModal({ id: r.id, action: 'confirmed' })} disabled={actioning === r.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap">
+                              {actioning === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Confirmer
                             </button>
-                            <button
-                              onClick={() => setModal({ id: r.id, action: 'cancelled' })}
-                              disabled={actioning === r.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap"
-                            >
+                            <button onClick={() => setModal({ id: r.id, action: 'cancelled' })} disabled={actioning === r.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap">
                               <XCircle className="w-3 h-3" /> Refuser
                             </button>
                           </>
                         )}
                         {r.status === 'confirmed' && (
-                          <button
-                            onClick={() => setModal({ id: r.id, action: 'cancelled' })}
-                            disabled={actioning === r.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap"
-                          >
-                            <XCircle className="w-3 h-3" /> Annuler
+                          <>
+                            <button onClick={() => handleAction(r.id, 'active' as any)} disabled={actioning === r.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap">
+                              <Play className="w-3 h-3" /> Marquer en cours
+                            </button>
+                            <button onClick={() => setModal({ id: r.id, action: 'cancelled' })} disabled={actioning === r.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap">
+                              <XCircle className="w-3 h-3" /> Annuler
+                            </button>
+                          </>
+                        )}
+                        {r.status === 'active' && (
+                          <button onClick={() => handleAction(r.id, 'completed' as any)} disabled={actioning === r.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap">
+                            <Flag className="w-3 h-3" /> Marquer terminée
                           </button>
                         )}
-                        <Link
-                          href={`/reservations/${r.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition whitespace-nowrap"
-                        >
+                        {/* Deposit buttons — shown when deposit is authorized */}
+                        {r.deposit_status === 'authorized' && ['active', 'completed'].includes(r.status) && (
+                          <>
+                            <div className="border-t border-gray-100 w-full my-0.5" />
+                            <button
+                              onClick={() => handleDepositAction(r.id, 'release')}
+                              disabled={depositActioning === r.id + 'release'}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {depositActioning === r.id + 'release' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+                              Libérer dépôt
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Capturer le dépôt ? Cette action prélève le montant sur la carte du client.')) {
+                                  handleDepositAction(r.id, 'capture');
+                                }
+                              }}
+                              disabled={depositActioning === r.id + 'capture'}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold transition disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {depositActioning === r.id + 'capture' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+                              Capturer dépôt
+                            </button>
+                          </>
+                        )}
+                        {r.deposit_status && r.deposit_status !== 'awaiting_authorization' && (
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            r.deposit_status === 'authorized' ? 'bg-blue-50 text-blue-600'
+                            : r.deposit_status === 'captured' ? 'bg-red-50 text-red-600'
+                            : r.deposit_status === 'released' ? 'bg-green-50 text-green-600'
+                            : 'bg-amber-50 text-amber-600'
+                          }`}>
+                            Dépôt : {r.deposit_status === 'authorized' ? '✓ auth.' : r.deposit_status === 'captured' ? 'prélevé' : r.deposit_status === 'released' ? 'libéré' : r.deposit_status}
+                          </span>
+                        )}
+                        <Link href={`/reservations/${r.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition whitespace-nowrap">
                           <FileText className="w-3 h-3" /> Contrat
                         </Link>
                       </div>

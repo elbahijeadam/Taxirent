@@ -2,6 +2,61 @@ const { query } = require('../config/database');
 const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail } = require('../services/emailService');
 const { generateContractHtml } = require('../services/contractService');
 
+// Return the Stripe client_secret for the deposit PaymentIntent so the user can authorize the hold
+const getDepositSecret = async (req, res) => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    const result = await query(
+      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const reservation = result.rows[0];
+    if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+    if (!reservation.deposit_stripe_intent_id) return res.status(404).json({ error: 'Aucun dépôt associé.' });
+    if (reservation.deposit_status !== 'awaiting_authorization') {
+      return res.status(400).json({ error: 'Le dépôt est déjà traité.' });
+    }
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(reservation.deposit_stripe_intent_id);
+    res.json({ clientSecret: pi.client_secret, amount: pi.amount });
+  } catch (err) {
+    console.error('getDepositSecret error:', err);
+    res.status(500).json({ error: 'Impossible de récupérer le dépôt.' });
+  }
+};
+
+// Called by the frontend after stripe.confirmPayment() succeeds — verifies and persists the authorization
+const confirmDepositAuthorization = async (req, res) => {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    const result = await query(
+      `SELECT deposit_stripe_intent_id FROM reservations WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!result.rows[0]?.deposit_stripe_intent_id) {
+      return res.status(404).json({ error: 'Réservation ou dépôt introuvable.' });
+    }
+    const intentId = result.rows[0].deposit_stripe_intent_id;
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(intentId);
+    if (pi.status === 'requires_capture') {
+      await query(
+        `UPDATE reservations SET deposit_status = 'authorized' WHERE id = $1`,
+        [req.params.id]
+      );
+      await query(
+        `UPDATE payments SET status = 'authorized' WHERE stripe_payment_intent_id = $1`,
+        [intentId]
+      );
+    }
+    const updated = await query(`SELECT * FROM reservations WHERE id = $1`, [req.params.id]);
+    res.json(updated.rows[0]);
+  } catch (err) {
+    console.error('confirmDepositAuthorization error:', err);
+    res.status(500).json({ error: 'Erreur de confirmation du dépôt.' });
+  }
+};
+
 const VALID_REASONS = ['engine_failure', 'accident', 'body_damage'];
 const REQUIRED_DOC_TYPES = ['driver_license_front', 'kbis', 'vehicle_registration'];
 const DEPOSIT_AMOUNT_EUR = 1500;
@@ -328,4 +383,4 @@ const listReservations = async (req, res) => {
   }
 };
 
-module.exports = { createReservation, getReservation, getContract, cancelReservation, listReservations };
+module.exports = { createReservation, getReservation, getContract, cancelReservation, listReservations, getDepositSecret, confirmDepositAuthorization };

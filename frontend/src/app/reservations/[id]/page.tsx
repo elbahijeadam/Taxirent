@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Calendar, Car, MapPin, FileText, Loader2, CheckCircle, XCircle, AlertTriangle, Download, Clock } from 'lucide-react';
+import { Calendar, Car, MapPin, FileText, Loader2, CheckCircle, XCircle, AlertTriangle, Download, Clock, Shield, Lock } from 'lucide-react';
 import { reservationApi, paymentApi } from '@/lib/api';
 import { Reservation } from '@/types';
 import { formatPrice, formatDate, isLoggedIn } from '@/lib/auth';
@@ -19,6 +19,48 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
   completed: { label: 'Location terminée', icon: <CheckCircle className="w-5 h-5" />, color: 'text-gray-600 bg-gray-50 border-gray-200' },
   cancelled: { label: 'Annulée', icon: <XCircle className="w-5 h-5" />, color: 'text-red-600 bg-red-50 border-red-200' },
 };
+
+// Deposit authorization form (capture_method: manual — card hold, not charged)
+function DepositForm({ onAuthorize }: { onAuthorize: () => Promise<void> }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handleAuthorize = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setLoading(true);
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.href },
+        redirect: 'if_required',
+      });
+      if (error) {
+        toast.error(error.message || 'Erreur d\'autorisation');
+      } else {
+        await onAuthorize();
+      }
+    } catch {
+      toast.error('Erreur lors de l\'autorisation du dépôt');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleAuthorize} className="space-y-5">
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+        <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        <p>Votre carte sera <strong>réservée</strong> mais <strong>jamais débitée</strong> sauf en cas de dommages constatés à la restitution.</p>
+      </div>
+      <PaymentElement />
+      <button type="submit" disabled={loading || !stripe} className="w-full py-4 text-base rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center gap-2 transition disabled:opacity-60">
+        {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Traitement...</> : <><Shield className="w-5 h-5" /> Autoriser le dépôt de garantie</>}
+      </button>
+    </form>
+  );
+}
 
 // Stripe payment form component
 function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
@@ -67,6 +109,8 @@ export default function ReservationDetailPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [depositClientSecret, setDepositClientSecret] = useState<string | null>(null);
+  const [loadingDeposit, setLoadingDeposit] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/auth/login'); return; }
@@ -83,6 +127,28 @@ export default function ReservationDetailPage() {
       toast.error(err.response?.data?.error || 'Erreur de paiement');
     } finally {
       setLoadingPayment(false);
+    }
+  };
+
+  const loadDepositSecret = async () => {
+    setLoadingDeposit(true);
+    try {
+      const res = await reservationApi.getDepositSecret(id);
+      setDepositClientSecret(res.data.clientSecret);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur de chargement du dépôt');
+    } finally {
+      setLoadingDeposit(false);
+    }
+  };
+
+  const handleDepositConfirm = async () => {
+    try {
+      await reservationApi.confirmDeposit(id);
+      toast.success('Dépôt de garantie autorisé !');
+      window.location.reload();
+    } catch {
+      toast.error('Erreur de confirmation du dépôt');
     }
   };
 
@@ -106,6 +172,9 @@ export default function ReservationDetailPage() {
   const statusCfg = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.pending;
   const canPay = ['pending', 'confirmed'].includes(reservation.status) && ['unpaid', 'prepaid'].includes(reservation.payment_status);
   const canCancel = ['pending', 'confirmed'].includes(reservation.status);
+  const canAuthorizeDeposit = reservation.deposit_stripe_intent_id &&
+    reservation.deposit_status === 'awaiting_authorization' &&
+    reservation.status !== 'cancelled';
   const totalDays = reservation.total_days;
 
   return (
@@ -204,6 +273,34 @@ export default function ReservationDetailPage() {
               </div>
             )}
 
+            {/* Deposit authorization */}
+            {canAuthorizeDeposit && (
+              <div className="card p-6 border-2 border-amber-300">
+                <h2 className="font-bold text-gray-900 mb-2 text-xl flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-amber-500" /> Dépôt de garantie
+                </h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  Autorisez le blocage de <strong>{formatPrice(reservation.deposit_amount)}</strong> sur votre carte.
+                  Aucun prélèvement sans dommages constatés.
+                </p>
+                {depositClientSecret ? (
+                  <Elements stripe={stripePromise} options={{ clientSecret: depositClientSecret }}>
+                    <DepositForm onAuthorize={handleDepositConfirm} />
+                  </Elements>
+                ) : (
+                  <button
+                    onClick={loadDepositSecret}
+                    disabled={loadingDeposit}
+                    className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center gap-2 transition disabled:opacity-60"
+                  >
+                    {loadingDeposit
+                      ? <><Loader2 className="w-5 h-5 animate-spin" /> Chargement...</>
+                      : <><Shield className="w-5 h-5" /> Autoriser le dépôt de garantie</>}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Payment form */}
             {canPay && (
               <div className="card p-6">
@@ -246,18 +343,36 @@ export default function ReservationDetailPage() {
                   <span>Total</span>
                   <span className="text-brand-500">{formatPrice(reservation.total_amount)}</span>
                 </div>
-                <div className={`flex justify-between text-xs pt-1`}>
+                <div className="flex justify-between text-xs pt-1">
                   <span className="text-gray-400">Statut paiement</span>
                   <span className={`font-semibold ${
                     reservation.payment_status === 'paid' ? 'text-green-600'
                     : reservation.payment_status === 'prepaid' ? 'text-blue-600'
+                    : reservation.payment_status === 'refunded' ? 'text-purple-600'
                     : 'text-red-600'
                   }`}>
                     {reservation.payment_status === 'paid' ? 'Payé'
                       : reservation.payment_status === 'prepaid' ? 'Acompte versé'
+                      : reservation.payment_status === 'refunded' ? 'Remboursé'
                       : 'Non payé'}
                   </span>
                 </div>
+                {reservation.deposit_stripe_intent_id && (
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-gray-400">Dépôt de garantie</span>
+                    <span className={`font-semibold ${
+                      reservation.deposit_status === 'authorized' ? 'text-blue-600'
+                      : reservation.deposit_status === 'captured' ? 'text-red-600'
+                      : reservation.deposit_status === 'released' ? 'text-green-600'
+                      : 'text-amber-600'
+                    }`}>
+                      {reservation.deposit_status === 'authorized' ? '✓ Autorisé'
+                        : reservation.deposit_status === 'captured' ? 'Prélevé'
+                        : reservation.deposit_status === 'released' ? 'Libéré'
+                        : 'En attente'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
