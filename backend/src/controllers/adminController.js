@@ -499,11 +499,11 @@ const resetDatabase = async (req, res) => {
     await client.query('DELETE FROM users WHERE id != $1', [adminId]);
 
     const CARS = [
-      ['Skoda','Octavia',2018,'Noir','SK-001-OCT','sedan','manual','diesel',5,4,65,1500,'Berline Skoda Octavia 1.6 TDI équipée taxi.','[]','[]','Paris'],
-      ['Skoda','Kodiaq',2020,'Noir','SK-002-KOD','suv','automatic','petrol',5,5,90,1500,'SUV Skoda Kodiaq équipé taxi.','[]','[]','Paris'],
+      ['Skoda','Octavia',2018,'Noir','SK-001-OCT','sedan','manual','diesel',5,4,55,1500,'Berline Skoda Octavia 1.6 TDI équipée taxi.','[]','[]','Paris'],
+      ['Skoda','Kodiaq',2020,'Noir','SK-002-KOD','suv','automatic','petrol',5,5,95,1500,'SUV Skoda Kodiaq équipé taxi.','[]','[]','Paris'],
       ['Toyota','Corolla 180ch',2020,'Blanc','TY-001-C18','hybrid','automatic','hybrid',5,4,75,1500,'Toyota Corolla hybride 180ch équipée taxi.','[]','[]','Paris'],
-      ['Toyota','Corolla 122ch',2019,'Blanc','TY-002-C12','hybrid','automatic','hybrid',5,4,70,1500,'Toyota Corolla hybride 122ch équipée taxi.','[]','[]','Paris'],
-      ['Tesla','Model Y',2024,'Noir','TS-001-MY','electric','automatic','electric',5,5,120,1500,'Tesla Model Y 100% électrique équipée taxi.','[]','[]','Paris'],
+      ['Toyota','Corolla 122ch',2019,'Blanc','TY-002-C12','hybrid','automatic','hybrid',5,4,65,1500,'Toyota Corolla hybride 122ch équipée taxi.','[]','[]','Paris'],
+      ['Tesla','Model Y',2024,'Noir','TS-001-MY','electric','automatic','electric',5,5,95,1500,'Tesla Model Y 100% électrique équipée taxi.','[]','[]','Paris'],
     ];
     for (const [make,model,year,color,lp,cat,trans,fuel,seats,doors,ppd,dep,desc,feat,imgs,city] of CARS) {
       await client.query(
