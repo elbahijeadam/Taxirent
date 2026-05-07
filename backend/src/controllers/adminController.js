@@ -1,5 +1,7 @@
 'use strict';
 const path = require('path');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { query, pool } = require('../config/database');
 const { autoValidateDocument } = require('../services/documentVerificationService');
 
@@ -469,6 +471,30 @@ const releaseDeposit = async (req, res) => {
   }
 };
 
+/* ── Admin password reset ───────────────────────────────────────────────── */
+const resetUserPassword = async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT id, email, first_name FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    const user = result.rows[0];
+
+    const tempPassword = crypto.randomBytes(6).toString('hex'); // 12 chars
+    const hash = await bcrypt.hash(tempPassword, 12);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, user.id]);
+
+    const { sendNewPasswordEmail } = require('../services/emailService');
+    sendNewPasswordEmail(user, tempPassword).catch(() => {});
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('resetUserPassword error:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+};
+
 /* ── Dev-only DB reset ──────────────────────────────────────────────────── */
 const resetDatabase = async (req, res) => {
   if (process.env.NODE_ENV !== 'development') {
@@ -519,4 +545,4 @@ const resetDatabase = async (req, res) => {
   }
 };
 
-module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetDatabase };
+module.exports = { getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser, listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument, listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetUserPassword, resetDatabase };

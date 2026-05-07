@@ -39,11 +39,14 @@ export const authApi = {
     phone: string;
     commune?: string;
   }) => api.post('/auth/register', data),
-  login:       (data: { email: string; password: string }) => api.post('/auth/login', data),
-  getMe:       () => api.get('/auth/me'),
-  verifyEmail: (code: string) => api.post('/auth/verify-email', { code }),
-  verifyPhone: (code: string) => api.post('/auth/verify-phone', { code }),
-  resendOtp:   (type: 'email' | 'phone') => api.post('/auth/resend-otp', { type }),
+  login:          (data: { email: string; password: string }) => api.post('/auth/login', data),
+  getMe:          () => api.get('/auth/me'),
+  verifyEmail:    (code: string) => api.post('/auth/verify-email', { code }),
+  verifyPhone:    (code: string) => api.post('/auth/verify-phone', { code }),
+  resendOtp:      (type: 'email' | 'phone') => api.post('/auth/resend-otp', { type }),
+  changePassword: (data: { current_password: string; new_password: string }) => api.put('/auth/change-password', data),
+  forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
+  resetPassword:  (data: { email: string; code: string; new_password: string }) => api.post('/auth/reset-password', data),
 };
 
 // Users
@@ -96,6 +99,7 @@ export const adminApi = {
   deleteUser:             (id: string) => api.delete(`/admin/users/${id}`),
   promoteUser:            (id: string, role: 'admin' | 'user') => api.patch(`/admin/users/${id}/role`, { role }),
   manualVerify:           (id: string) => api.patch(`/admin/users/${id}/verify`),
+  resetUserPassword:      (id: string) => api.post(`/admin/users/${id}/reset-password`),
   listReservations:       (params?: Record<string, string | number>) => api.get('/admin/reservations', { params }),
   updateReservationStatus:(id: string, status: string, admin_note?: string) =>
     api.patch(`/admin/reservations/${id}/status`, { status, admin_note }),

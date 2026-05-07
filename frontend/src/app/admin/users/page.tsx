@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Search, CheckCircle, XCircle, Clock, ArrowRight,
-  FileText, Loader2, ChevronLeft, ChevronRight, RefreshCw,
+  FileText, Loader2, ChevronLeft, ChevronRight, RefreshCw, KeyRound,
 } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { User } from '@/types';
@@ -36,6 +36,7 @@ function AdminUsersContent() {
   const [total,   setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<string | null>(null);
 
   const [filter, setFilter] = useState(searchParams.get('status') || '');
   const [q, setQ]           = useState('');
@@ -59,6 +60,19 @@ function AdminUsersContent() {
   }, [page, filter, q]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  const handleResetPassword = async (id: string, name: string) => {
+    if (!confirm(`Réinitialiser le mot de passe de ${name} ? Un mot de passe temporaire lui sera envoyé par email.`)) return;
+    setResetting(id);
+    try {
+      await adminApi.resetUserPassword(id);
+      toast.success(`Mot de passe réinitialisé — email envoyé à ${name}`);
+    } catch {
+      toast.error('Échec de la réinitialisation');
+    } finally {
+      setResetting(null);
+    }
+  };
 
   const handleStatus = async (id: string, status: 'approved' | 'rejected') => {
     setActioning(id);
@@ -190,6 +204,15 @@ function AdminUsersContent() {
                             <XCircle className="w-3 h-3" /> Rejeter
                           </button>
                         )}
+                        <button
+                          onClick={() => handleResetPassword(u.id, `${u.first_name} ${u.last_name}`)}
+                          disabled={resetting === u.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+                          title="Réinitialiser le mot de passe"
+                        >
+                          {resetting === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <KeyRound className="w-3 h-3" />}
+                          MDP
+                        </button>
                         <Link
                           href={`/admin/users/${u.id}`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition"

@@ -238,6 +238,51 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
   });
 };
 
+const sendPasswordResetEmail = async (user, code) => {
+  console.log(`[EMAIL PASSWORD RESET] to: ${user.email} | code: ${code}`);
+  try {
+    await sendMail({
+      to: user.email,
+      subject: `${code} — Réinitialisation de votre mot de passe Taxirent`,
+      type: 'password_reset',
+      html: `<div style="${baseStyle}">${header}
+        <div style="padding:32px;">
+          <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+          <p style="color:#4a5568;line-height:1.6;">Vous avez demandé la réinitialisation de votre mot de passe. Utilisez ce code (valable <strong>10 minutes</strong>) :</p>
+          <div style="background:#fef3c7;border:2px dashed #d97706;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
+            <p style="font-size:48px;font-weight:800;letter-spacing:12px;color:#1a1a2e;margin:0;font-family:monospace;">${code}</p>
+          </div>
+          <p style="color:#718096;font-size:13px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe reste inchangé.</p>
+        </div>${footer}</div>`,
+    });
+  } catch (err) {
+    console.error('[EMAIL] Password reset send failed:', err.message);
+  }
+};
+
+const sendNewPasswordEmail = async (user, tempPassword) => {
+  console.log(`[EMAIL NEW PASSWORD] to: ${user.email}`);
+  try {
+    await sendMail({
+      to: user.email,
+      subject: 'Votre nouveau mot de passe Taxirent',
+      type: 'new_password',
+      html: `<div style="${baseStyle}">${header}
+        <div style="padding:32px;">
+          <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+          <p style="color:#4a5568;line-height:1.6;">Un administrateur a réinitialisé votre mot de passe. Voici votre mot de passe temporaire :</p>
+          <div style="background:#f0f9ff;border:2px dashed #0284c7;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
+            <p style="font-size:28px;font-weight:800;letter-spacing:4px;color:#1a1a2e;margin:0;font-family:monospace;">${tempPassword}</p>
+          </div>
+          <p style="color:#4a5568;line-height:1.6;">Connectez-vous avec ce mot de passe et modifiez-le immédiatement depuis votre profil.</p>
+          <p style="color:#718096;font-size:13px;">Pour toute question, contactez-nous à taxirent.contact@gmail.com.</p>
+        </div>${footer}</div>`,
+    });
+  } catch (err) {
+    console.error('[EMAIL] New password send failed:', err.message);
+  }
+};
+
 const SMS_READY = false;
 
-module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, SMS_READY };
+module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, sendPasswordResetEmail, sendNewPasswordEmail, SMS_READY };

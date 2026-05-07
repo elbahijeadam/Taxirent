@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User, FileText, Shield, Save, Loader2, CheckCircle, XCircle, Mail, Phone } from 'lucide-react';
-import { userApi } from '@/lib/api';
+import { User, FileText, Shield, Save, Loader2, CheckCircle, XCircle, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
+import { userApi, authApi } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Document, User as UserType } from '@/types';
 import DocumentUpload from '@/components/DocumentUpload';
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'info', label: 'Informations', icon: User },
   { id: 'professional', label: 'Données professionnelles', icon: Shield },
   { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'security', label: 'Sécurité', icon: Lock },
 ];
 
 function ProfilePage() {
@@ -22,12 +23,16 @@ function ProfilePage() {
   const { user, isLoading } = useAuth();
   const [tab, setTab] = useState(() => {
     const t = searchParams.get('tab');
-    return t && ['info', 'professional', 'documents'].includes(t) ? t : 'info';
+    return t && ['info', 'professional', 'documents', 'security'].includes(t) ? t : 'info';
   });
   const [form, setForm] = useState<Partial<UserType>>({});
   const [saving, setSaving] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [docsLoaded, setDocsLoaded] = useState(false);
+
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwShow, setPwShow] = useState({ current: false, next: false, confirm: false });
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/auth/login'); return; }
@@ -45,6 +50,22 @@ function ProfilePage() {
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) { toast.error('Les mots de passe ne correspondent pas.'); return; }
+    if (pwForm.next.length < 8) { toast.error('Le mot de passe doit contenir au moins 8 caractères.'); return; }
+    setPwSaving(true);
+    try {
+      await authApi.changePassword({ current_password: pwForm.current, new_password: pwForm.next });
+      toast.success('Mot de passe modifié.');
+      setPwForm({ current: '', next: '', confirm: '' });
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur de modification');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -219,6 +240,46 @@ function ProfilePage() {
                 });
               }}
             />
+          </div>
+        )}
+
+        {/* Security tab */}
+        {tab === 'security' && (
+          <div className="card p-8 max-w-lg">
+            <h2 className="font-bold text-gray-900 text-xl mb-1">Changer le mot de passe</h2>
+            <p className="text-gray-500 text-sm mb-6">Choisissez un mot de passe d'au moins 8 caractères.</p>
+            <form onSubmit={handleChangePassword} className="space-y-5">
+              {(['current', 'next', 'confirm'] as const).map((field) => {
+                const labels = { current: 'Mot de passe actuel', next: 'Nouveau mot de passe', confirm: 'Confirmer le nouveau mot de passe' };
+                return (
+                  <div key={field}>
+                    <label className="label">{labels[field]}</label>
+                    <div className="relative">
+                      <input
+                        type={pwShow[field] ? 'text' : 'password'}
+                        value={pwForm[field]}
+                        onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
+                        className="input pr-12"
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPwShow((s) => ({ ...s, [field]: !s[field] }))}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {pwShow[field] ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="pt-2">
+                <button type="submit" disabled={pwSaving} className="btn-primary px-8 py-3 rounded-xl">
+                  {pwSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> Modification...</> : <><Lock className="w-5 h-5" /> Modifier le mot de passe</>}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>

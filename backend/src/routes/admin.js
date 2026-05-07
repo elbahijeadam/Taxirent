@@ -2,7 +2,7 @@ const router = require('express').Router();
 const {
   getStats, listUsers, getUserDetails, updateUserStatus, deleteUser, promoteUser, manualVerifyUser,
   listPendingDocuments, getDocumentVerification, updateDocumentStatus, reprocessDocument,
-  listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetDatabase,
+  listReservations, updateReservationStatus, captureDeposit, releaseDeposit, resetUserPassword, resetDatabase,
 } = require('../controllers/adminController');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
@@ -14,6 +14,7 @@ router.get('/users', listUsers);
 router.get('/users/:id', getUserDetails);
 router.patch('/users/:id/status', updateUserStatus);
 router.patch('/users/:id/verify', manualVerifyUser);
+router.post('/users/:id/reset-password', resetUserPassword);
 router.patch('/users/:id/role', promoteUser);
 router.delete('/users/:id', deleteUser);
 
