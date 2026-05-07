@@ -1,13 +1,6 @@
 'use strict';
 const https = require('https');
-const twilio = require('twilio');
 const { query } = require('../config/database');
-
-const twilioClient = (
-  process.env.TWILIO_ACCOUNT_SID &&
-  process.env.TWILIO_AUTH_TOKEN &&
-  !process.env.TWILIO_ACCOUNT_SID.startsWith('your_')
-) ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) : null;
 
 const RESEND_READY = !!(process.env.RESEND_API_KEY);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -89,19 +82,12 @@ const sendOtpEmail = async ({ to, firstName, code }) => {
 };
 
 const sendOtpSms = async ({ to, firstName, code }) => {
-  const phone = (to || '').trim().replace(/\s+/g, '');
-  if (!phone) { console.warn('[SMS] Skipped: empty phone'); return; }
+  console.log(`[SMS] SMS désactivé — to: ${to} | code: ${code}`);
+  return;
 
-  if (!twilioClient) {
-    console.log(`[DEV SMS OTP] to: ${phone} | code: ${code}`);
-    return;
-  }
   try {
-    await twilioClient.messages.create({
-      body: `Votre code Taxirent est : ${code}. Il expire dans 10 minutes.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phone,
-    });
+    // Placeholder — SMS via Twilio désactivé, réactivation prévue
+    void { to, firstName, code };
   } catch (err) {
     console.error(`[SMS] Failed:`, err.message);
   }
@@ -252,6 +238,6 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
   });
 };
 
-const SMS_READY = !!twilioClient;
+const SMS_READY = false;
 
 module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, SMS_READY };

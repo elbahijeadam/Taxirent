@@ -79,9 +79,9 @@ const createReservation = async (req, res) => {
     reason, vehicle_location, immobilized_plate, notes,
   } = req.body;
 
-  if (req.user.role !== 'admin' && (!req.user.email_verified || !req.user.phone_verified)) {
+  if (req.user.role !== 'admin' && !req.user.email_verified) {
     return res.status(403).json({
-      error: "Vérifiez votre email et votre téléphone avant d'effectuer une réservation.",
+      error: "Vérifiez votre email avant d'effectuer une réservation.",
       code: 'UNVERIFIED_ACCOUNT',
     });
   }

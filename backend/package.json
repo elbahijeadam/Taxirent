@@ -24,7 +24,6 @@
     "pg": "^8.20.0",
     "stripe": "^14.9.0",
     "tesseract.js": "^4.1.4",
-    "twilio": "^6.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
