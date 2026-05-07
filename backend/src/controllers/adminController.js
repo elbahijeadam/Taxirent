@@ -63,7 +63,7 @@ const listUsers = async (req, res) => {
 
   if (status) { conds.push(`u.status = $${p++}`); params.push(status); }
   if (q) {
-    conds.push(`(u.email LIKE $${p} OR u.first_name LIKE $${p} OR u.last_name LIKE $${p})`);
+    conds.push(`(u.email ILIKE $${p} OR u.first_name ILIKE $${p} OR u.last_name ILIKE $${p})`);
     params.push(`%${q}%`); p++;
   }
   const where = `WHERE ${conds.join(' AND ')}`;
@@ -164,7 +164,7 @@ const listReservations = async (req, res) => {
 
   if (status) { conds.push(`r.status = $${p++}`); params.push(status); }
   if (q) {
-    conds.push(`(u.email LIKE $${p} OR u.first_name LIKE $${p} OR u.last_name LIKE $${p} OR r.id::text LIKE $${p})`);
+    conds.push(`(u.email ILIKE $${p} OR u.first_name ILIKE $${p} OR u.last_name ILIKE $${p} OR r.id::text ILIKE $${p})`);
     params.push(`%${q}%`); p++;
   }
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';

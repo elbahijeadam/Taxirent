@@ -57,7 +57,7 @@ const formatPrice = (n) => parseFloat(n).toFixed(2).replace('.', ',') + ' €';
 
 const baseStyle = `font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;`;
 const header    = `<div style="background:#1a1a2e;padding:28px 32px;text-align:center;"><h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:1px;">TAXI<span style="color:#16a34a;font-weight:300;">RENT</span></h1><p style="color:#a0aec0;margin:6px 0 0;font-size:13px;">Location de véhicules équipés taxi</p></div>`;
-const footer    = `<div style="background:#f7fafc;padding:14px;text-align:center;color:#a0aec0;font-size:11px;">Taxirent SARL — 7 Allée de Lille, 91170 Viry-Châtillon — taxirent.contact@gmail.com</div>`;
+const footer    = `<div style="background:#f7fafc;padding:14px;text-align:center;color:#a0aec0;font-size:11px;">Taxirent EURL — Capital 100 € — SIREN 921 300 190 RCS Évry — taxirent.contact@gmail.com</div>`;
 
 const sendOtpEmail = async ({ to, firstName, code }) => {
   console.log(`[EMAIL OTP] to: ${to} | code: ${code}`);
@@ -129,7 +129,7 @@ const sendReservationEmail = async (user, reservation, car) => {
 };
 
 const sendAdminNotificationEmail = async (user, reservation, car) => {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+  const adminEmail = process.env.ADMIN_EMAIL || 'elbahijeadam@gmail.com';
   if (!adminEmail) return;
   await sendMail({
     to: adminEmail,
@@ -159,7 +159,7 @@ const sendContractEmail = async (user, reservation, car, contractHtml) => {
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
         <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
-        <p style="color:#4a5568;line-height:1.6;">Votre contrat de location est prêt. Retrouvez-le en pièce jointe.</p>
+        <p style="color:#4a5568;line-height:1.6;">Votre contrat de location est prêt. Téléchargez-le depuis votre espace client.</p>
         <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>

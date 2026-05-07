@@ -190,13 +190,20 @@ export default function VerifyPage() {
     setSubmitting(true);
     try {
       const res = await authApi.verifyEmail(otp);
-      patchUser({ email_verified: true });
       setOtp('');
-      if (res.data._dev_otp) {
-        toast.success(`[DEV] Code SMS : ${res.data._dev_otp}`, { duration: 10000, icon: '📱' });
+      if (res.data.next === 'done') {
+        // SMS_READY=false: phone auto-verified server-side
+        patchUser({ email_verified: true, phone_verified: true });
+        toast.success('Email vérifié !');
+        setStep('done');
+      } else {
+        patchUser({ email_verified: true });
+        if (res.data._dev_otp) {
+          toast.success(`[DEV] Code SMS : ${res.data._dev_otp}`, { duration: 10000, icon: '📱' });
+        }
+        toast.success('Email vérifié !');
+        setStep('phone');
       }
-      toast.success('Email vérifié !');
-      setStep('phone');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Code invalide');
     } finally {
