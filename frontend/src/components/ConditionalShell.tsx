@@ -68,9 +68,9 @@ function Footer() {
               La plateforme SaaS de référence pour la gestion et la mise en relation dans le secteur de la location de véhicules professionnels.
             </p>
             <div className="text-xs text-gray-600 space-y-1.5 leading-relaxed">
-              <p className="font-medium text-gray-500">Taxirent SARL — Capital 10 000 €</p>
-              <p>RCS Paris 123 456 789</p>
-              <p>TVA FR12 123456789</p>
+              <p className="font-medium text-gray-500">Taxirent EURL — Capital 100 €</p>
+              <p>921 300 190 RCS Évry</p>
+              <p>TVA FR42 921 300 190</p>
               <p>7 Allée de Lille, 91170 Viry-Châtillon</p>
             </div>
           </div>
@@ -130,12 +130,12 @@ function Footer() {
         {/* ── Bottom bar ── */}
         <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-gray-600">
-            © {year} Taxirent SARL — Tous droits réservés
+            © {year} Taxirent EURL — Tous droits réservés
           </p>
           <div className="flex items-center gap-5 text-xs text-gray-700">
-            <span>Hébergé par OVHcloud (France)</span>
+            <span>Hébergé par Vercel & Railway</span>
             <span className="text-gray-800">•</span>
-            <span>Droit français applicable — Tribunaux de Paris</span>
+            <span>Droit français applicable</span>
           </div>
         </div>
       </div>
