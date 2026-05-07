@@ -410,6 +410,24 @@ async function initDb() {
     );
     console.log('[DB] Admin bootstrapped: elbahijeadam@gmail.com');
   }
+
+  /* ── Bootstrap second admin (Monir) ─────────────────────────────────────── */
+  const { rows: monirRows } = await pool.query(
+    "SELECT id FROM users WHERE email = 'elbahije.monir@gmail.com'"
+  );
+  if (monirRows.length === 0) {
+    await pool.query(
+      `INSERT INTO users
+         (email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
+       VALUES ($1, $2, $3, $4, $5, 'admin', 'approved', 1, 1)`,
+      [
+        'elbahije.monir@gmail.com',
+        '$2a$12$tlZLcuBAFf3wDgcKfAUHgu4DAYdy9.G6LDJJmYZJkAVLFai1Tz2wm',
+        'Monir', 'El Bahije', '',
+      ]
+    );
+    console.log('[DB] Admin bootstrapped: elbahije.monir@gmail.com');
+  }
 }
 
 module.exports = { query, initDb, pool };
