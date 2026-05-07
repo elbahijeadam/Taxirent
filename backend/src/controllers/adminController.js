@@ -422,27 +422,23 @@ const manualVerifyUser = async (req, res) => {
   }
 };
 
-/* ── Deposit management ─────────────────────────────────────────────────── */
+/* ── Deposit management (Swikly) ────────────────────────────────────────── */
 const captureDeposit = async (req, res) => {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    if (!process.env.SWIKLY_API_KEY) return res.status(503).json({ error: 'Swikly non configuré.' });
     const result = await query(
-      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1`,
+      `SELECT deposit_swikly_id, deposit_status, deposit_amount FROM reservations WHERE id = $1`,
       [req.params.id]
     );
     const reservation = result.rows[0];
     if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
-    if (!reservation.deposit_stripe_intent_id) return res.status(400).json({ error: 'Aucun dépôt à capturer.' });
+    if (!reservation.deposit_swikly_id) return res.status(400).json({ error: 'Aucun dépôt à capturer.' });
     if (reservation.deposit_status !== 'authorized') {
       return res.status(400).json({ error: `Dépôt non autorisé (statut : ${reservation.deposit_status}).` });
     }
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    await stripe.paymentIntents.capture(reservation.deposit_stripe_intent_id);
+    const { claimSwik } = require('../services/swiklyService');
+    await claimSwik(reservation.deposit_swikly_id, reservation.deposit_amount);
     await query(`UPDATE reservations SET deposit_status = 'captured' WHERE id = $1`, [req.params.id]);
-    await query(
-      `UPDATE payments SET status = 'succeeded' WHERE stripe_payment_intent_id = $1`,
-      [reservation.deposit_stripe_intent_id]
-    );
     res.json({ success: true });
   } catch (err) {
     console.error('captureDeposit error:', err);
@@ -452,24 +448,20 @@ const captureDeposit = async (req, res) => {
 
 const releaseDeposit = async (req, res) => {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    if (!process.env.SWIKLY_API_KEY) return res.status(503).json({ error: 'Swikly non configuré.' });
     const result = await query(
-      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1`,
+      `SELECT deposit_swikly_id, deposit_status FROM reservations WHERE id = $1`,
       [req.params.id]
     );
     const reservation = result.rows[0];
     if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
-    if (!reservation.deposit_stripe_intent_id) return res.status(400).json({ error: 'Aucun dépôt à libérer.' });
+    if (!reservation.deposit_swikly_id) return res.status(400).json({ error: 'Aucun dépôt à libérer.' });
     if (!['authorized', 'awaiting_authorization'].includes(reservation.deposit_status)) {
       return res.status(400).json({ error: `Dépôt non libérable (statut : ${reservation.deposit_status}).` });
     }
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    await stripe.paymentIntents.cancel(reservation.deposit_stripe_intent_id);
+    const { deleteSwik } = require('../services/swiklyService');
+    await deleteSwik(reservation.deposit_swikly_id);
     await query(`UPDATE reservations SET deposit_status = 'released' WHERE id = $1`, [req.params.id]);
-    await query(
-      `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
-      [reservation.deposit_stripe_intent_id]
-    );
     res.json({ success: true });
   } catch (err) {
     console.error('releaseDeposit error:', err);

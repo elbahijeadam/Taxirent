@@ -227,6 +227,9 @@ async function initDb() {
       `);
     }
 
+    // Migrate: add Swikly deposit column
+    await client.query(`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS deposit_swikly_id TEXT`);
+
     // Migrate: replace legacy 'luxury' category with 'sedan'
     await client.query(`UPDATE cars SET category = 'sedan' WHERE category = 'luxury'`);
 

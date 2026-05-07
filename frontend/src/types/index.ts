@@ -102,8 +102,9 @@ export interface Reservation {
   contractReady?: boolean;
   depositClientSecret?: string;
   depositAmount?: number;
-  deposit_status?: 'awaiting_authorization' | 'authorized' | 'captured' | 'released' | null;
-  deposit_stripe_intent_id?: string;
+  deposit_status?: 'awaiting_authorization' | 'authorized' | 'captured' | 'released' | 'none' | null;
+  deposit_swikly_id?: string;
+  swiklyAcceptUrl?: string;
   // Joined fields
   make?: string;
   model?: string;

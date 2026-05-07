@@ -1,54 +1,65 @@
 const { query } = require('../config/database');
 const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail } = require('../services/emailService');
 const { generateContractHtml } = require('../services/contractService');
+const { createSwik, getSwik, deleteSwik } = require('../services/swiklyService');
 
-// Return the Stripe client_secret for the deposit PaymentIntent so the user can authorize the hold
-const getDepositSecret = async (req, res) => {
+// Return the Swikly acceptUrl so the user can authorize the deposit hold
+const getSwiklyDepositUrl = async (req, res) => {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
+    if (!process.env.SWIKLY_API_KEY) return res.status(503).json({ error: 'Swikly non configuré.' });
     const result = await query(
-      `SELECT deposit_stripe_intent_id, deposit_status FROM reservations WHERE id = $1 AND user_id = $2`,
+      `SELECT deposit_swikly_id, deposit_status FROM reservations WHERE id = $1 AND user_id = $2`,
       [req.params.id, req.user.id]
     );
     const reservation = result.rows[0];
     if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
-    if (!reservation.deposit_stripe_intent_id) return res.status(404).json({ error: 'Aucun dépôt associé.' });
+    if (!reservation.deposit_swikly_id) return res.status(404).json({ error: 'Aucun dépôt associé.' });
     if (reservation.deposit_status !== 'awaiting_authorization') {
       return res.status(400).json({ error: 'Le dépôt est déjà traité.' });
     }
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(reservation.deposit_stripe_intent_id);
-    res.json({ clientSecret: pi.client_secret, amount: pi.amount });
+    const swik = await getSwik(reservation.deposit_swikly_id);
+    const acceptUrl = swik.acceptUrl || swik.accept_url || swik.url;
+    if (!acceptUrl) return res.status(500).json({ error: 'URL Swikly introuvable.' });
+    res.json({ acceptUrl, amount: DEPOSIT_AMOUNT_EUR });
   } catch (err) {
-    console.error('getDepositSecret error:', err);
+    console.error('getSwiklyDepositUrl error:', err);
     res.status(500).json({ error: 'Impossible de récupérer le dépôt.' });
   }
 };
 
-// Called by the frontend after stripe.confirmPayment() succeeds — verifies and persists the authorization
+// Called by the frontend after returning from Swikly — marks the deposit as authorized
 const confirmDepositAuthorization = async (req, res) => {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe non configuré.' });
     const result = await query(
-      `SELECT deposit_stripe_intent_id FROM reservations WHERE id = $1 AND user_id = $2`,
+      `SELECT deposit_swikly_id, deposit_status FROM reservations WHERE id = $1 AND user_id = $2`,
       [req.params.id, req.user.id]
     );
-    if (!result.rows[0]?.deposit_stripe_intent_id) {
-      return res.status(404).json({ error: 'Réservation ou dépôt introuvable.' });
+    const reservation = result.rows[0];
+    if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+
+    // Already authorized — idempotent
+    if (reservation.deposit_status === 'authorized') {
+      const updated = await query(`SELECT * FROM reservations WHERE id = $1`, [req.params.id]);
+      return res.json(updated.rows[0]);
     }
-    const intentId = result.rows[0].deposit_stripe_intent_id;
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(intentId);
-    if (pi.status === 'requires_capture') {
-      await query(
-        `UPDATE reservations SET deposit_status = 'authorized' WHERE id = $1`,
-        [req.params.id]
-      );
-      await query(
-        `UPDATE payments SET status = 'authorized' WHERE stripe_payment_intent_id = $1`,
-        [intentId]
-      );
+    if (!reservation.deposit_swikly_id) {
+      return res.status(404).json({ error: 'Aucun dépôt associé.' });
     }
+
+    // Optionally verify with Swikly API that the swik exists
+    if (process.env.SWIKLY_API_KEY) {
+      try {
+        await getSwik(reservation.deposit_swikly_id);
+      } catch (swikErr) {
+        console.warn('[DEPOSIT] Swikly verification warning:', swikErr.message);
+        // Continue — Swikly redirected to our callback which implies authorization
+      }
+    }
+
+    await query(
+      `UPDATE reservations SET deposit_status = 'authorized' WHERE id = $1`,
+      [req.params.id]
+    );
     const updated = await query(`SELECT * FROM reservations WHERE id = $1`, [req.params.id]);
     res.json(updated.rows[0]);
   } catch (err) {
@@ -167,37 +178,32 @@ const createReservation = async (req, res) => {
     );
     const reservation = result.rows[0];
 
-    // Create deposit pre-authorisation (manual capture = card held, not charged yet).
-    // Amount is fixed at DEPOSIT_AMOUNT_EUR regardless of rental cost.
-    let depositClientSecret = null;
-    if (req.user.role !== 'admin' && process.env.STRIPE_SECRET_KEY) {
+    // Create Swikly deposit swik (card hold, never charged unless damages)
+    let swiklyAcceptUrl = null;
+    if (req.user.role !== 'admin' && process.env.SWIKLY_API_KEY) {
       try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-        const depositPI = await stripe.paymentIntents.create({
-          amount:          DEPOSIT_AMOUNT_EUR * 100, // cents
-          currency:        'eur',
-          capture_method:  'manual', // authorise only — captured on damage/end of rental
-          metadata: {
-            reservation_id: reservation.id,
-            user_id:        req.user.id,
-            type:           'deposit',
-          },
-          description: `Dépôt de garantie — Réservation ${reservation.id.slice(0, 8)}`,
+        const swikEndDate = new Date(end_date);
+        swikEndDate.setDate(swikEndDate.getDate() + 7); // 7-day buffer for damage assessment
+        const callbackUrl = `${process.env.FRONTEND_URL}/reservations/${reservation.id}?deposit=success`;
+
+        const swik = await createSwik({
+          reservationId: reservation.id,
+          userEmail:     req.user.email,
+          amount:        DEPOSIT_AMOUNT_EUR,
+          endDate:       swikEndDate.toISOString().split('T')[0],
+          callbackUrl,
         });
-        depositClientSecret = depositPI.client_secret;
+
+        const swikId = swik.id || swik.swikId || swik.swik_id;
+        swiklyAcceptUrl = swik.acceptUrl || swik.accept_url || swik.url;
 
         await query(
-          `UPDATE reservations SET deposit_stripe_intent_id = $1, deposit_status = 'awaiting_authorization' WHERE id = $2`,
-          [depositPI.id, reservation.id]
+          `UPDATE reservations SET deposit_swikly_id = $1, deposit_status = 'awaiting_authorization' WHERE id = $2`,
+          [swikId, reservation.id]
         );
-        await query(
-          `INSERT INTO payments (reservation_id, user_id, stripe_payment_intent_id, amount, type, status)
-           VALUES ($1,$2,$3,$4,'deposit','pending')`,
-          [reservation.id, req.user.id, depositPI.id, DEPOSIT_AMOUNT_EUR]
-        );
-      } catch (stripeErr) {
-        console.error('[RESERVATION] Deposit PI creation failed:', stripeErr.message);
-        // Non-fatal: reservation is still created; admin will follow up on deposit
+      } catch (swiklyErr) {
+        console.error('[RESERVATION] Swikly swik creation failed:', swiklyErr.message);
+        // Non-fatal: reservation created, admin will follow up on deposit
       }
     }
 
@@ -217,7 +223,7 @@ const createReservation = async (req, res) => {
     res.status(201).json({
       ...finalReservation,
       contractReady: true,
-      ...(depositClientSecret ? { depositClientSecret, depositAmount: DEPOSIT_AMOUNT_EUR } : {}),
+      ...(swiklyAcceptUrl ? { swiklyAcceptUrl, depositAmount: DEPOSIT_AMOUNT_EUR } : {}),
     });
   } catch (err) {
     console.error('Create reservation error:', err);
@@ -286,17 +292,13 @@ const cancelReservation = async (req, res) => {
       [req.params.id]
     );
 
-    // Void deposit payment intent on Stripe (non-fatal)
-    if (reservation.deposit_stripe_intent_id && process.env.STRIPE_SECRET_KEY) {
+    // Release Swikly deposit swik on cancellation (non-fatal)
+    if (reservation.deposit_swikly_id && process.env.SWIKLY_API_KEY) {
       try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-        await stripe.paymentIntents.cancel(reservation.deposit_stripe_intent_id);
-        await query(
-          `UPDATE payments SET status = 'cancelled' WHERE stripe_payment_intent_id = $1`,
-          [reservation.deposit_stripe_intent_id]
-        );
-      } catch (stripeErr) {
-        console.warn('[CANCEL] Could not void Stripe deposit intent:', stripeErr.message);
+        await deleteSwik(reservation.deposit_swikly_id);
+        await query(`UPDATE reservations SET deposit_status = 'released' WHERE id = $1`, [req.params.id]);
+      } catch (swiklyErr) {
+        console.warn('[CANCEL] Could not delete Swikly swik:', swiklyErr.message);
       }
     }
 
@@ -383,4 +385,4 @@ const listReservations = async (req, res) => {
   }
 };
 
-module.exports = { createReservation, getReservation, getContract, cancelReservation, listReservations, getDepositSecret, confirmDepositAuthorization };
+module.exports = { createReservation, getReservation, getContract, cancelReservation, listReservations, getSwiklyDepositUrl, confirmDepositAuthorization };
