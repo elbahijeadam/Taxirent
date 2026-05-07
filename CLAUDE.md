@@ -151,6 +151,33 @@ Flux deposit complet :
 
 ---
 
+### Session 5 (2026-05-07) — Intégration Swikly + Stripe production
+
+Backend :
+- swiklyService.js — client API Swikly (createSwik, getSwik, deleteSwik, claimSwik)
+- reservationController.js — createSwik() au lieu de Stripe deposit PI, retourne swiklyAcceptUrl
+- reservationController.js — getSwiklyDepositUrl() (ex getDepositSecret) → retourne acceptUrl Swikly
+- reservationController.js — confirmDepositAuthorization → vérifie via getSwik() + met à jour deposit_status
+- reservationController.js — cancelReservation → deleteSwik() au lieu de Stripe cancel
+- adminController.js — captureDeposit → claimSwik() / releaseDeposit → deleteSwik()
+- database.js — migration ALTER TABLE reservations ADD COLUMN deposit_swikly_id
+- routes/reservations.js — /deposit-url (ex /deposit-secret)
+
+Frontend :
+- types/index.ts — deposit_swikly_id, swiklyAcceptUrl, 'none' dans deposit_status union
+- lib/api.ts — getDepositUrl() (ex getDepositSecret)
+- reservations/[id]/page.tsx — supprime DepositForm Stripe Elements
+  Bouton "Autoriser le dépôt" → redirect window.location.href vers Swikly acceptUrl
+  Auto-confirmation au retour Swikly (?deposit=success) via useEffect + window.location.search
+
+Config Railway (variables à vérifier) :
+- SWIKLY_API_KEY ✓ (ajouté)
+- STRIPE_SECRET_KEY ✓
+- STRIPE_WEBHOOK_SECRET ✓ (webhook configuré sur Stripe dashboard)
+- NEXT_PUBLIC_STRIPE_KEY ✓ (ajouté sur Vercel)
+
+---
+
 ## Taches restantes avant vente
 
 ### CRITIQUE (bloquant)
@@ -164,7 +191,7 @@ Flux deposit complet :
 - [x] Fix bug webhook Stripe — FAIT
       RESTE : verifier l'URL dans dashboard Stripe = https://<railway-url>/api/payments/webhook
 - [x] Stripe refund automatique sur annulation — FAIT
-- [x] Flux depot de garantie complet — FAIT (session 4)
+- [x] Flux depot de garantie complet — FAIT (session 4, migré vers Swikly en session 5)
 - [ ] Uploader d'images voitures (actuellement : champ texte URL)
 - [ ] Verifier que Twilio est configure en prod (sinon phone_verified jamais true -> aucune reservation possible)
       Si pas Twilio : envisager de rendre phone_verified optionnel ou OTP par email uniquement
@@ -193,12 +220,12 @@ Flux deposit complet :
 - Annulation reservation payee : stripe.refunds.create() -> remboursement + email
 - Webhook URL prod : https://<railway-url>/api/payments/webhook (a verifier dans dashboard Stripe)
 
-### deposit_status (champ reservations)
-- 'awaiting_authorization' : PI cree, utilisateur n'a pas encore autorise
-- 'authorized'             : hold place sur carte (requires_capture sur Stripe)
-- 'captured'               : montant preleve (admin action, en cas de dommages)
-- 'released'               : hold annule (admin action, fin location sans dommages)
-- null                     : pas de depot (reservations admin ou Stripe non configure)
+### deposit_status (champ reservations) — Swikly depuis session 5
+- 'awaiting_authorization' : swik cree, utilisateur n'a pas encore autorise sur Swikly
+- 'authorized'             : hold place (utilisateur a autorise sur Swikly)
+- 'captured'               : montant preleve via claimSwik() (admin, cas de dommages)
+- 'released'               : swik supprime via deleteSwik() (admin ou annulation)
+- 'none'                   : pas de depot (reservations admin ou SWIKLY_API_KEY absent)
 
 ### Cache
 - carController.js : cache in-memory 60s TTL, invalide sur write (create/update/delete)
