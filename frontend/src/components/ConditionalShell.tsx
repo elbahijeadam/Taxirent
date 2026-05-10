@@ -68,7 +68,7 @@ function Footer() {
               La plateforme SaaS de référence pour la gestion et la mise en relation dans le secteur de la location de véhicules professionnels.
             </p>
             <div className="text-xs text-gray-600 space-y-1.5 leading-relaxed">
-              <p className="font-medium text-gray-500">Taxirent EURL — Capital 100 €</p>
+              <p className="font-medium text-gray-500">Taxirent EURL</p>
               <p>921 300 190 RCS Évry</p>
               <p>TVA FR42 921 300 190</p>
               <p>7 Allée de Lille, 91170 Viry-Châtillon</p>
