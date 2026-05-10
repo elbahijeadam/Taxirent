@@ -99,7 +99,7 @@ export default function HomePage() {
               <span className="text-brand-500">Reprenez la route.</span>
             </h1>
             <p className="text-lg lg:text-xl text-gray-400 mb-10 leading-relaxed max-w-xl">
-              Taxirent met à disposition des véhicules relais équipés pour les chauffeurs de taxi en Île-de-France. Réservation 100 % en ligne, vérification documentaire automatisée, contrat généré automatiquement.
+              Taxirent met à disposition des véhicules relais équipés pour les chauffeurs de taxi en Île-de-France. Réservation 100 % en ligne, contrat généré automatiquement.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/auth/register" className="btn-primary text-base px-8 py-4 rounded-2xl shadow-lg shadow-brand-500/25">
