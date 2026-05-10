@@ -292,26 +292,29 @@ async function initDb() {
                         'SK-005-OCT','TY-007-C18','SK-006-KOD','TY-008-C12','TS-003-MY'];
   await pool.query(`DELETE FROM cars WHERE license_plate = ANY($1)`, [CLONE_PLATES]);
 
-  const octaviaImg = JSON.stringify(['https://images.unsplash.com/photo-1528820846917-a476472ee6b3?auto=format&fit=crop&w=800&q=80']);
-  const kodiacImg  = JSON.stringify(['https://images.unsplash.com/photo-1698413935252-04ed6377296d?auto=format&fit=crop&w=800&q=80']);
-  const corollaImg = JSON.stringify(['https://images.unsplash.com/photo-1776043669128-b6b1f73bd8dd?auto=format&fit=crop&w=800&q=80']);
-  const teslaImg   = JSON.stringify(['https://images.unsplash.com/photo-1678026039241-75a1becd25e5?auto=format&fit=crop&w=800&q=80']);
-  const priusImg   = JSON.stringify(['https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&w=800&q=80']);
-  const mercedesImg= JSON.stringify(['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80']);
-  const peugeotImg = JSON.stringify(['https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=800&q=80']);
-  const teslaM3Img = JSON.stringify(['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80']);
-  const renaultImg = JSON.stringify(['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80']);
-  const hyundaiImg = JSON.stringify(['https://images.unsplash.com/photo-1629297696754-8f8b6cad0c23?auto=format&fit=crop&w=800&q=80']);
-  const kiaImg     = JSON.stringify(['https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80']);
+  const octaviaImg     = JSON.stringify(['/cars/skoda-octavia.png']);
+  const kodiacImg      = JSON.stringify(['/cars/skoda-kodiaq.png']);
+  const superbImg      = JSON.stringify(['/cars/skoda-superb.png']);
+  const corollaImg     = JSON.stringify(['/cars/toyota-corolla.png']);
+  const teslaImg       = JSON.stringify(['/cars/tesla-model-y.png']);
+  const teslaM3Img     = JSON.stringify(['/cars/tesla-model-3.png']);
+  const priusArgentImg = JSON.stringify(['/cars/toyota-prius-argent.png']);
+  const priusBlancImg  = JSON.stringify(['/cars/toyota-prius-blanc.png']);
+  const mercedesImg    = JSON.stringify(['/cars/mercedes-classe-e.png']);
+  const peugeot508Img  = JSON.stringify(['/cars/peugeot-508.png']);
+  const peugeot3008Img = JSON.stringify(['/cars/peugeot-3008.png']);
+  const renaultImg     = JSON.stringify(['/cars/renault-talisman.png']);
+  const hyundaiImg     = JSON.stringify(['/cars/hyundai-ioniq.png']);
+  const kiaImg         = JSON.stringify(['/cars/kia-e-niro.png']);
 
   // [make, model, year, color, license_plate, category, transmission, fuel_type,
   //  seats, doors, price_per_day, deposit_amount, description, features, images, city, is_available]
   const ALL_CARS = [
     // ── Paris ──────────────────────────────────────────────────────────────
-    ['Skoda','Octavia',2018,'Noir','SK-001-OCT','sedan','manual','diesel',5,4,65,1500,
+    ['Skoda','Octavia',2018,'Gris Graphite','SK-001-OCT','sedan','manual','diesel',5,4,65,1500,
      "Berline Skoda Octavia 1.6 TDI équipée taxi. Lumignon, taximètre et séparation inclus. Idéale pour reprendre l'activité rapidement.",
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur de vitesse']),octaviaImg,'Paris',1],
-    ['Skoda','Kodiaq',2020,'Noir','SK-002-KOD','suv','automatic','petrol',5,5,90,1500,
+    ['Skoda','Kodiaq',2020,'Gris Graphite','SK-002-KOD','suv','automatic','petrol',5,5,90,1500,
      'SUV Skoda Kodiaq équipé taxi, idéal pour les courses longues distances et aéroports. Grand coffre.',
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Caméra de recul']),kodiacImg,'Paris',1],
     ['Toyota','Corolla 180ch',2020,'Blanc','TY-001-C18','hybrid','automatic','hybrid',5,4,75,1500,
@@ -325,7 +328,7 @@ async function initDb() {
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide','Climatisation']),teslaImg,'Paris',1],
     ['Toyota','Prius',2021,'Argent','TY-003-PRI','hybrid','automatic','hybrid',5,4,72,1500,
      'Toyota Prius hybride équipée taxi. En maintenance préventive, disponible prochainement.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Paris',0],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusArgentImg,'Paris',0],
     ['Tesla','Model 3',2023,'Blanc','TS-002-M3','electric','automatic','electric',5,4,110,1500,
      'Tesla Model 3 100% électrique équipée taxi. En attente de mise en service.',
      JSON.stringify(['Équipement taxi complet','Autopilot','GPS','Écran 15 pouces','Recharge rapide']),teslaM3Img,'Paris',0],
@@ -338,7 +341,7 @@ async function initDb() {
     // ── Créteil ────────────────────────────────────────────────────────────
     ['Peugeot','508',2021,'Noir','PE-001-508','sedan','automatic','diesel',5,4,78,1500,
      'Peugeot 508 berline premium équipée taxi. Design élégant, confort supérieur et faible consommation.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif','Caméra de recul']),peugeotImg,'Créteil',0],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur adaptatif','Caméra de recul']),peugeot508Img,'Créteil',0],
 
     // ── Nanterre ───────────────────────────────────────────────────────────
     ['Renault','Talisman',2020,'Gris','RN-001-TAL','sedan','automatic','diesel',5,4,68,1500,
@@ -346,12 +349,12 @@ async function initDb() {
      JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Régulateur de vitesse']),renaultImg,'Nanterre',0],
     ['Skoda','Superb',2020,'Noir','SK-004-SUP','sedan','automatic','diesel',5,4,82,1500,
      'Skoda Superb berline spacieuse équipée taxi. En révision, retour prévu prochainement.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Sièges chauffants','Grand coffre']),octaviaImg,'Nanterre',0],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Sièges chauffants','Grand coffre']),superbImg,'Nanterre',0],
 
     // ── Versailles ─────────────────────────────────────────────────────────
     ['Toyota','Prius',2022,'Blanc','TY-006-PRI','hybrid','automatic','hybrid',5,4,72,1500,
      'Toyota Prius hybride équipée taxi. Parfaite pour desservir Versailles, le 78 et au-delà.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusImg,'Versailles',0],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride']),priusBlancImg,'Versailles',0],
 
     // ── Bobigny ────────────────────────────────────────────────────────────
     ['Hyundai','Ioniq',2021,'Blanc','HY-001-ION','hybrid','automatic','hybrid',5,4,70,1500,
@@ -361,7 +364,7 @@ async function initDb() {
     // ── Évry ───────────────────────────────────────────────────────────────
     ['Peugeot','3008',2022,'Gris','PE-002-300','suv','automatic','hybrid',5,5,88,1500,
      'Peugeot 3008 hybride rechargeable équipé taxi. SUV moderne, idéal pour les transferts aéroport Orly.',
-     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride rechargeable','Caméra 360°']),peugeotImg,'Évry',0],
+     JSON.stringify(['Équipement taxi complet','Climatisation','GPS','Bluetooth','Hybride rechargeable','Caméra 360°']),peugeot3008Img,'Évry',0],
 
     // ── Cergy ──────────────────────────────────────────────────────────────
     ['Kia','e-Niro',2022,'Blanc','KI-001-ENI','electric','automatic','electric',5,4,85,1500,
@@ -428,6 +431,25 @@ async function initDb() {
     );
     console.log('[DB] Admin bootstrapped: elbahije.monir@gmail.com');
   }
+
+  /* ── Migration images voitures (local) ──────────────────────────────────── */
+  await pool.query(`UPDATE cars SET images = '["/cars/skoda-octavia.png"]',  color = 'Gris Graphite' WHERE license_plate = 'SK-001-OCT'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/skoda-kodiaq.png"]',   color = 'Gris Graphite' WHERE license_plate = 'SK-002-KOD'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/skoda-superb.png"]'                             WHERE license_plate = 'SK-004-SUP'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/toyota-corolla.png"]'                           WHERE license_plate = 'TY-001-C18'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/toyota-corolla.png"]'                           WHERE license_plate = 'TY-002-C12'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/tesla-model-y.png"]'                            WHERE license_plate = 'TS-001-MY'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/tesla-model-3.png"]'                            WHERE license_plate = 'TS-002-M3'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/toyota-prius-argent.png"]'                      WHERE license_plate = 'TY-003-PRI'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/toyota-prius-blanc.png"]'                       WHERE license_plate = 'TY-006-PRI'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/mercedes-classe-e.png"]'                        WHERE license_plate = 'MB-001-CLE'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/mercedes-classe-e.png"]'                        WHERE license_plate = 'MB-003-CLE'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/peugeot-508.png"]'                              WHERE license_plate = 'PE-001-508'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/peugeot-3008.png"]'                             WHERE license_plate = 'PE-002-300'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/renault-talisman.png"]'                         WHERE license_plate = 'RN-001-TAL'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/hyundai-ioniq.png"]'                            WHERE license_plate = 'HY-001-ION'`);
+  await pool.query(`UPDATE cars SET images = '["/cars/kia-e-niro.png"]'                               WHERE license_plate = 'KI-001-ENI'`);
+  console.log('[DB] Images voitures mises à jour');
 }
 
 module.exports = { query, initDb, pool };
