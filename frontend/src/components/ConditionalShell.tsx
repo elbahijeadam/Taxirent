@@ -117,12 +117,6 @@ function Footer() {
                   taxirent.contact@gmail.com
                 </a>
               </p>
-              <p>
-                <a href="tel:+33606763589" className="text-gray-400 hover:text-white transition-colors">
-                  +33 6 06 76 35 89
-                </a>
-              </p>
-              <p className="text-gray-600">Gérant : Monir El Bahije</p>
             </div>
           </div>
         </div>
