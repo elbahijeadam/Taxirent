@@ -72,7 +72,7 @@ export default function Navbar() {
             {user?.role === 'admin' && (
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 hover:text-brand-300 rounded-lg text-sm font-semibold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-semibold transition"
               >
                 <ShieldCheck className="w-4 h-4" />
                 Admin

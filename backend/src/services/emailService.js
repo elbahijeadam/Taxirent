@@ -70,7 +70,7 @@ const header    = `<div style="background:#1a1a2e;padding:28px 32px;text-align:c
 const footer    = `<div style="background:#f7fafc;padding:14px;text-align:center;color:#a0aec0;font-size:11px;">Taxirent EURL — Capital 100 € — SIREN 921 300 190 RCS Évry — taxirent.contact@gmail.com</div>`;
 
 const sendOtpEmail = async ({ to, firstName, code }) => {
-  console.log(`[EMAIL OTP] to: ${to} | code: ${code}`);
+  console.log(`[EMAIL OTP] to: ${to}`);
   const safeName = escapeHtml(firstName);
   const safeCode = escapeHtml(code);
   try {
@@ -94,7 +94,8 @@ const sendOtpEmail = async ({ to, firstName, code }) => {
 };
 
 const sendOtpSms = async ({ to, firstName, code }) => {
-  console.log(`[SMS] SMS désactivé — to: ${to} | code: ${code}`);
+  console.log(`[SMS] SMS désactivé — to: ${to}`);
+  void code; void firstName;
   return;
 
   try {
@@ -141,7 +142,7 @@ const sendReservationEmail = async (user, reservation, car) => {
 };
 
 const sendAdminNotificationEmail = async (user, reservation, car) => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'elbahijeadam@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
   await sendMail({
     to: adminEmail,
@@ -251,7 +252,7 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
 };
 
 const sendPasswordResetEmail = async (user, code) => {
-  console.log(`[EMAIL PASSWORD RESET] to: ${user.email} | code: ${code}`);
+  console.log(`[EMAIL PASSWORD RESET] to: ${user.email}`);
   const safeCode = escapeHtml(code);
   try {
     await sendMail({
