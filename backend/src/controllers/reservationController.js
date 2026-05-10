@@ -46,13 +46,18 @@ const confirmDepositAuthorization = async (req, res) => {
       return res.status(404).json({ error: 'Aucun dépôt associé.' });
     }
 
-    // Optionally verify with Swikly API that the swik exists
+    // Verify with Swikly that the swik exists and was accepted
     if (process.env.SWIKLY_API_KEY) {
       try {
-        await getSwik(reservation.deposit_swikly_id);
+        const swik = await getSwik(reservation.deposit_swikly_id);
+        // Swikly marks accepted swiks with status 'accepted' or equivalent
+        const status = (swik.status || '').toLowerCase();
+        if (status && status !== 'accepted' && status !== 'validated' && status !== 'active') {
+          return res.status(402).json({ error: `Dépôt non autorisé (statut: ${status}).` });
+        }
       } catch (swikErr) {
-        console.warn('[DEPOSIT] Swikly verification warning:', swikErr.message);
-        // Continue — Swikly redirected to our callback which implies authorization
+        console.error('[DEPOSIT] Swikly verification failed:', swikErr.message);
+        return res.status(502).json({ error: 'Impossible de vérifier le dépôt auprès de Swikly.' });
       }
     }
 

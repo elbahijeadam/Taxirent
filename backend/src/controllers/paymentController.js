@@ -100,10 +100,11 @@ const handleWebhook = async (req, res) => {
       );
 
       const newPaymentStatus = payment_type === 'full_payment' ? 'paid' : 'prepaid';
+      // Verify the PI actually belongs to this reservation before updating (prevents spoofed metadata)
       const reservationResult = await query(
         `UPDATE reservations SET payment_status = $1, status = 'confirmed'
-         WHERE id = $2 RETURNING *`,
-        [newPaymentStatus, reservation_id]
+         WHERE id = $2 AND stripe_payment_intent_id = $3 RETURNING *`,
+        [newPaymentStatus, reservation_id, pi.id]
       );
 
       const reservation = reservationResult.rows[0];

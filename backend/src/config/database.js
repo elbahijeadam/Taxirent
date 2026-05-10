@@ -1,5 +1,6 @@
 'use strict';
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/taxirent',
@@ -392,44 +393,57 @@ async function initDb() {
   if (addedCars > 0) console.log(`[DB] Cars seeded: ${addedCars} added`);
 
   /* ── Bootstrap admin ────────────────────────────────────────────────────── */
-  const { rows: adminRows } = await pool.query(
-    "SELECT id FROM users WHERE email = 'elbahijeadam@gmail.com' AND role = 'admin'"
-  );
-  if (adminRows.length === 0) {
-    await pool.query('DELETE FROM email_logs');
-    await pool.query('DELETE FROM otp_codes');
-    await pool.query('DELETE FROM documents');
-    await pool.query('UPDATE reservations SET user_id = NULL');
-    await pool.query('DELETE FROM users');
-    await pool.query(
-      `INSERT INTO users
-         (email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
-       VALUES ($1, $2, $3, $4, $5, 'admin', 'approved', 1, 1)`,
-      [
-        'elbahijeadam@gmail.com',
-        '$2a$12$R8jrfOqcsneftp5z.sXPe.xQ7PLvASykQftBdqc25Xi380nDzC7US',
-        'Adam', 'El Bahije', '+33606763589',
-      ]
+  // Admin credentials are loaded from env vars — never hardcoded
+  const adminEmail    = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminEmail && adminPassword) {
+    const { rows: adminRows } = await pool.query(
+      'SELECT id FROM users WHERE email = $1 AND role = $2',
+      [adminEmail, 'admin']
     );
-    console.log('[DB] Admin bootstrapped: elbahijeadam@gmail.com');
+    if (adminRows.length === 0) {
+      const hash = await bcrypt.hash(adminPassword, 12);
+      await pool.query(
+        `INSERT INTO users
+           (email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
+         VALUES ($1, $2, $3, $4, $5, 'admin', 'approved', 1, 1)`,
+        [
+          adminEmail,
+          hash,
+          process.env.ADMIN_FIRST_NAME || 'Admin',
+          process.env.ADMIN_LAST_NAME  || 'Taxirent',
+          process.env.ADMIN_PHONE      || '',
+        ]
+      );
+      console.log(`[DB] Admin bootstrapped: ${adminEmail}`);
+    }
+  } else {
+    console.warn('[DB] ADMIN_EMAIL / ADMIN_PASSWORD env vars not set — skipping admin bootstrap');
   }
 
-  /* ── Bootstrap second admin (Monir) ─────────────────────────────────────── */
-  const { rows: monirRows } = await pool.query(
-    "SELECT id FROM users WHERE email = 'elbahije.monir@gmail.com'"
-  );
-  if (monirRows.length === 0) {
-    await pool.query(
-      `INSERT INTO users
-         (email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
-       VALUES ($1, $2, $3, $4, $5, 'admin', 'approved', 1, 1)`,
-      [
-        'elbahije.monir@gmail.com',
-        '$2a$12$tlZLcuBAFf3wDgcKfAUHgu4DAYdy9.G6LDJJmYZJkAVLFai1Tz2wm',
-        'Monir', 'El Bahije', '',
-      ]
+  const admin2Email    = process.env.ADMIN2_EMAIL;
+  const admin2Password = process.env.ADMIN2_PASSWORD;
+  if (admin2Email && admin2Password) {
+    const { rows: admin2Rows } = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [admin2Email]
     );
-    console.log('[DB] Admin bootstrapped: elbahije.monir@gmail.com');
+    if (admin2Rows.length === 0) {
+      const hash2 = await bcrypt.hash(admin2Password, 12);
+      await pool.query(
+        `INSERT INTO users
+           (email, password_hash, first_name, last_name, phone, role, status, email_verified, phone_verified)
+         VALUES ($1, $2, $3, $4, $5, 'admin', 'approved', 1, 1)`,
+        [
+          admin2Email,
+          hash2,
+          process.env.ADMIN2_FIRST_NAME || 'Admin2',
+          process.env.ADMIN2_LAST_NAME  || 'Taxirent',
+          process.env.ADMIN2_PHONE      || '',
+        ]
+      );
+      console.log(`[DB] Admin 2 bootstrapped: ${admin2Email}`);
+    }
   }
 
   /* ── Migration images voitures (local) ──────────────────────────────────── */

@@ -44,7 +44,7 @@ const register = async (req, res) => {
     console.log(`[AUTH FLOW] userId=${user.id} step=registered email=${user.email}`);
 
     const payload = { token, user };
-    if (process.env.NODE_ENV !== 'production') payload._dev_otp = emailCode;
+    if (process.env.EXPOSE_DEV_OTP === 'true') payload._dev_otp = emailCode;
 
     res.status(201).json(payload);
   } catch (err) {
@@ -60,7 +60,14 @@ const login = async (req, res) => {
   }
 
   try {
-    const result = await query('SELECT * FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+    const result = await query(
+      `SELECT id, email, password_hash, first_name, last_name, phone, date_of_birth, place_of_birth,
+              driver_license_number, driver_license_date, professional_card_number, license_number,
+              commune, address, reason_for_immobilization, role, status, is_verified,
+              email_verified, phone_verified, created_at
+       FROM users WHERE email = $1`,
+      [email.trim().toLowerCase()]
+    );
     const user = result.rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -105,7 +112,7 @@ const verifyEmail = async (req, res) => {
   await sendOtpSms({ to: req.user.phone, firstName: req.user.first_name, code: phoneCode }).catch(() => {});
 
   const payload = { success: true, next: 'phone' };
-  if (process.env.NODE_ENV !== 'production') payload._dev_otp = phoneCode;
+  if (process.env.EXPOSE_DEV_OTP === 'true') payload._dev_otp = phoneCode;
 
   res.json(payload);
 };
@@ -159,7 +166,7 @@ const resendOtp = async (req, res) => {
     }
 
     const payload = { success: true };
-    if (process.env.NODE_ENV !== 'production') payload._dev_otp = code;
+    if (process.env.EXPOSE_DEV_OTP === 'true') payload._dev_otp = code;
 
     res.json(payload);
   } catch (err) {

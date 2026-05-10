@@ -28,6 +28,8 @@ router.patch('/reservations/:id/status', updateReservationStatus);
 router.post('/reservations/:id/deposit/capture', captureDeposit);
 router.post('/reservations/:id/deposit/release', releaseDeposit);
 
-router.post('/dev/reset-db', resetDatabase);
+if (process.env.NODE_ENV === 'development') {
+  router.post('/dev/reset-db', resetDatabase);
+}
 
 module.exports = router;

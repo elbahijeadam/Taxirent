@@ -8,6 +8,10 @@ function generateOtp() {
   return String(crypto.randomInt(100000, 1000000));
 }
 
+function hashOtp(code) {
+  return crypto.createHash('sha256').update(code).digest('hex');
+}
+
 async function createOtp(userId, type) {
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -19,7 +23,7 @@ async function createOtp(userId, type) {
 
   await query(
     `INSERT INTO otp_codes (user_id, type, code, expires_at, attempts) VALUES ($1, $2, $3, $4, 0)`,
-    [userId, type, code, expiresAt]
+    [userId, type, hashOtp(code), expiresAt]
   );
 
   return code;
@@ -44,7 +48,7 @@ async function verifyOtp(userId, type, code) {
 
   if (new Date(otp.expires_at) < new Date()) return { ok: false, reason: 'OTP_EXPIRED' };
 
-  if (otp.code !== code) return { ok: false, reason: 'INVALID_OTP' };
+  if (otp.code !== hashOtp(code)) return { ok: false, reason: 'INVALID_OTP' };
 
   await query(`UPDATE otp_codes SET used = 1 WHERE id = $1`, [otp.id]);
   return { ok: true };

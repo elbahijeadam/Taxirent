@@ -2,6 +2,16 @@
 const https = require('https');
 const { query } = require('../config/database');
 
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 const RESEND_READY = !!(process.env.RESEND_API_KEY);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const FROM_EMAIL   = process.env.EMAIL_FROM || 'Taxirent <onboarding@resend.dev>';
@@ -61,17 +71,19 @@ const footer    = `<div style="background:#f7fafc;padding:14px;text-align:center
 
 const sendOtpEmail = async ({ to, firstName, code }) => {
   console.log(`[EMAIL OTP] to: ${to} | code: ${code}`);
+  const safeName = escapeHtml(firstName);
+  const safeCode = escapeHtml(code);
   try {
     await sendMail({
       to,
-      subject: `${code} — Votre code de vérification Taxirent`,
+      subject: `${safeCode} — Votre code de vérification Taxirent`,
       type: 'otp_email',
       html: `<div style="${baseStyle}">${header}
         <div style="padding:32px;">
-          <h2 style="color:#1a1a2e;">Bonjour ${firstName},</h2>
+          <h2 style="color:#1a1a2e;">Bonjour ${safeName},</h2>
           <p style="color:#4a5568;line-height:1.6;">Voici votre code de vérification. Il est valable <strong>10 minutes</strong>.</p>
           <div style="background:#f0fdf4;border:2px dashed #16a34a;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
-            <p style="font-size:48px;font-weight:800;letter-spacing:12px;color:#1a1a2e;margin:0;font-family:monospace;">${code}</p>
+            <p style="font-size:48px;font-weight:800;letter-spacing:12px;color:#1a1a2e;margin:0;font-family:monospace;">${safeCode}</p>
           </div>
           <p style="color:#718096;font-size:13px;">Si vous n'avez pas créé de compte Taxirent, ignorez cet email.</p>
         </div>${footer}</div>`,
@@ -98,7 +110,7 @@ const sendWelcomeEmail = async (user) => {
     to: user.email, subject: 'Bienvenue chez Taxirent !', type: 'welcome', userId: user.id,
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
-        <h2 style="color:#1a1a2e;">Bienvenue, ${user.first_name} !</h2>
+        <h2 style="color:#1a1a2e;">Bienvenue, ${escapeHtml(user.first_name)} !</h2>
         <p style="color:#4a5568;line-height:1.6;">Votre compte a été créé avec succès. Vous pouvez maintenant parcourir notre flotte et effectuer vos réservations.</p>
         <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir les véhicules disponibles</a>
       </div>${footer}</div>`,
@@ -108,13 +120,13 @@ const sendWelcomeEmail = async (user) => {
 const sendReservationEmail = async (user, reservation, car) => {
   await sendMail({
     to: user.email,
-    subject: `Réservation enregistrée — ${car.make} ${car.model}`,
+    subject: `Réservation enregistrée — ${escapeHtml(car.make)} ${escapeHtml(car.model)}`,
     type: 'reservation_created', userId: user.id, reservationId: reservation.id,
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
         <h2 style="color:#1a1a2e;">Votre demande est enregistrée !</h2>
         <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
-          <h3 style="margin:0 0 12px;color:#2d3748;">${car.make} ${car.model} ${car.year}</h3>
+          <h3 style="margin:0 0 12px;color:#2d3748;">${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</h3>
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:600;color:#2d3748;">${reservation.id.slice(0,8).toUpperCase()}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Début</td><td>${formatDate(reservation.start_date)}</td></tr>
@@ -133,12 +145,12 @@ const sendAdminNotificationEmail = async (user, reservation, car) => {
   if (!adminEmail) return;
   await sendMail({
     to: adminEmail,
-    subject: `[Admin] Nouvelle réservation — ${user.first_name} ${user.last_name}`,
+    subject: `[Admin] Nouvelle réservation — ${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}`,
     type: 'admin_notification', userId: user.id, reservationId: reservation.id,
     html: `<div style="${baseStyle}"><div style="padding:24px;">
       <h2>Nouvelle réservation reçue</h2>
-      <p><strong>Client:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
-      <p><strong>Véhicule:</strong> ${car.make} ${car.model} ${car.year}</p>
+      <p><strong>Client:</strong> ${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)} (${escapeHtml(user.email)})</p>
+      <p><strong>Véhicule:</strong> ${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</p>
       <p><strong>Dates:</strong> ${formatDate(reservation.start_date)} → ${formatDate(reservation.end_date)}</p>
       <p><strong>Montant:</strong> ${formatPrice(reservation.total_amount)}</p>
       <p style="color:#e53e3e;">⚠️ Vérifiez les documents du client avant confirmation.</p>
@@ -158,13 +170,13 @@ const sendContractEmail = async (user, reservation, car, contractHtml) => {
     attachments: [{ filename: `contrat-${refId}.html`, content: contractHtml, contentType: 'text/html' }],
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
-        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
         <p style="color:#4a5568;line-height:1.6;">Votre contrat de location est prêt. Téléchargez-le depuis votre espace client.</p>
         <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Motif</td><td>${REASON_LABELS[reservation.reason] || reservation.reason}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Motif</td><td>${escapeHtml(REASON_LABELS[reservation.reason] || reservation.reason)}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Prise en charge</td><td>${formatDate(reservation.start_date)}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Restitution</td><td>${formatDate(reservation.end_date)}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant</td><td style="font-weight:700;color:#16a34a;font-size:18px;">${formatPrice(reservation.total_amount)}</td></tr>
@@ -185,12 +197,12 @@ const sendCancellationEmail = async (user, reservation, car) => {
     type: 'reservation_cancelled', userId: user.id, reservationId: reservation.id,
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
-        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
         <p style="color:#4a5568;line-height:1.6;">Votre réservation a été annulée avec succès.</p>
         <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Dates prévues</td><td>${formatDate(reservation.start_date)} → ${formatDate(reservation.end_date)}</td></tr>
           </table>
         </div>
@@ -208,12 +220,12 @@ const sendRefundEmail = async (user, reservation, car) => {
     type: 'reservation_refunded', userId: user.id, reservationId: reservation.id,
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
-        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
         <p style="color:#4a5568;line-height:1.6;">Votre réservation a été annulée et un remboursement complet a été initié.</p>
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant remboursé</td><td style="font-weight:700;color:#16a34a;">${formatPrice(reservation.total_amount)}</td></tr>
           </table>
         </div>
@@ -232,7 +244,7 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
       <div style="padding:32px;text-align:center;">
         <span style="font-size:48px;">✅</span>
         <h2 style="color:#16a34a;">Paiement confirmé !</h2>
-        <p style="color:#4a5568;">Bonjour ${user.first_name}, votre paiement pour le <strong>${car.make} ${car.model}</strong> a bien été reçu.</p>
+        <p style="color:#4a5568;">Bonjour ${escapeHtml(user.first_name)}, votre paiement pour le <strong>${escapeHtml(car.make)} ${escapeHtml(car.model)}</strong> a bien été reçu.</p>
         <p style="color:#718096;font-size:13px;margin-top:16px;">Présentez-vous le jour de la prise en charge avec vos documents originaux.</p>
       </div>${footer}</div>`,
   });
@@ -240,17 +252,18 @@ const sendPaymentConfirmationEmail = async (user, reservation, car) => {
 
 const sendPasswordResetEmail = async (user, code) => {
   console.log(`[EMAIL PASSWORD RESET] to: ${user.email} | code: ${code}`);
+  const safeCode = escapeHtml(code);
   try {
     await sendMail({
       to: user.email,
-      subject: `${code} — Réinitialisation de votre mot de passe Taxirent`,
+      subject: `${safeCode} — Réinitialisation de votre mot de passe Taxirent`,
       type: 'password_reset',
       html: `<div style="${baseStyle}">${header}
         <div style="padding:32px;">
-          <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+          <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
           <p style="color:#4a5568;line-height:1.6;">Vous avez demandé la réinitialisation de votre mot de passe. Utilisez ce code (valable <strong>10 minutes</strong>) :</p>
           <div style="background:#fef3c7;border:2px dashed #d97706;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
-            <p style="font-size:48px;font-weight:800;letter-spacing:12px;color:#1a1a2e;margin:0;font-family:monospace;">${code}</p>
+            <p style="font-size:48px;font-weight:800;letter-spacing:12px;color:#1a1a2e;margin:0;font-family:monospace;">${safeCode}</p>
           </div>
           <p style="color:#718096;font-size:13px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe reste inchangé.</p>
         </div>${footer}</div>`,
@@ -269,10 +282,10 @@ const sendNewPasswordEmail = async (user, tempPassword) => {
       type: 'new_password',
       html: `<div style="${baseStyle}">${header}
         <div style="padding:32px;">
-          <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+          <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
           <p style="color:#4a5568;line-height:1.6;">Un administrateur a réinitialisé votre mot de passe. Voici votre mot de passe temporaire :</p>
           <div style="background:#f0f9ff;border:2px dashed #0284c7;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
-            <p style="font-size:28px;font-weight:800;letter-spacing:4px;color:#1a1a2e;margin:0;font-family:monospace;">${tempPassword}</p>
+            <p style="font-size:28px;font-weight:800;letter-spacing:4px;color:#1a1a2e;margin:0;font-family:monospace;">${escapeHtml(tempPassword)}</p>
           </div>
           <p style="color:#4a5568;line-height:1.6;">Connectez-vous avec ce mot de passe et modifiez-le immédiatement depuis votre profil.</p>
           <p style="color:#718096;font-size:13px;">Pour toute question, contactez-nous à taxirent.contact@gmail.com.</p>
@@ -293,16 +306,16 @@ const sendReservationConfirmedEmail = async (user, reservation, car) => {
       <div style="padding:32px;">
         <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">✅</span></div>
         <h2 style="color:#16a34a;text-align:center;">Réservation confirmée !</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre réservation a été confirmée par notre équipe.</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, votre réservation a été confirmée par notre équipe.</p>
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Prise en charge</td><td>${formatDate(reservation.start_date)}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Restitution</td><td>${formatDate(reservation.end_date)}</td></tr>
           </table>
         </div>
-        ${reservation.admin_note ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Note :</strong> ${reservation.admin_note}</p></div>` : ''}
+        ${reservation.admin_note ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Note :</strong> ${escapeHtml(reservation.admin_note)}</p></div>` : ''}
         <p style="color:#4a5568;font-size:13px;">Présentez-vous avec vos documents originaux : permis, carte professionnelle, KBIS et pièce d'identité.</p>
         <a href="${FRONTEND_URL}/reservations/${reservation.id}" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir ma réservation</a>
       </div>${footer}</div>`,
@@ -319,11 +332,11 @@ const sendReservationActiveEmail = async (user, reservation, car) => {
       <div style="padding:32px;">
         <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🚗</span></div>
         <h2 style="color:#1a1a2e;text-align:center;">Votre location a démarré</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre véhicule a été pris en charge. Bonne route !</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, votre véhicule a été pris en charge. Bonne route !</p>
         <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} — ${car.license_plate}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} — ${escapeHtml(car.license_plate)}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Restitution prévue</td><td style="font-weight:600;">${formatDate(reservation.end_date)}</td></tr>
           </table>
         </div>
@@ -342,11 +355,11 @@ const sendReservationCompletedEmail = async (user, reservation, car) => {
       <div style="padding:32px;">
         <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🏁</span></div>
         <h2 style="color:#1a1a2e;text-align:center;">Location terminée — Merci !</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre location est maintenant clôturée. Merci de votre confiance !</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, votre location est maintenant clôturée. Merci de votre confiance !</p>
         <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Durée</td><td>${reservation.total_days} jour(s)</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant total</td><td style="font-weight:700;color:#16a34a;">${formatPrice(reservation.total_amount)}</td></tr>
           </table>
@@ -364,16 +377,16 @@ const sendAdminCancellationEmail = async (user, reservation, car, adminNote) => 
     type: 'reservation_cancelled_admin', userId: user.id, reservationId: reservation.id,
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
-        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <h2 style="color:#1a1a2e;">Bonjour ${escapeHtml(user.first_name)},</h2>
         <p style="color:#4a5568;line-height:1.6;">Votre réservation a été annulée par notre équipe.</p>
         <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Dates prévues</td><td>${formatDate(reservation.start_date)} → ${formatDate(reservation.end_date)}</td></tr>
           </table>
         </div>
-        ${adminNote ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Motif :</strong> ${adminNote}</p></div>` : ''}
+        ${adminNote ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Motif :</strong> ${escapeHtml(adminNote)}</p></div>` : ''}
         <p style="color:#718096;font-size:13px;">Pour toute question, contactez-nous à taxirent.contact@gmail.com.</p>
         <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir les véhicules disponibles</a>
       </div>${footer}</div>`,
@@ -390,11 +403,11 @@ const sendDepositAuthorizedEmail = async (user, reservation, car) => {
       <div style="padding:32px;">
         <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🔒</span></div>
         <h2 style="color:#1a1a2e;text-align:center;">Dépôt de garantie autorisé</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre dépôt de garantie a bien été autorisé. Aucun montant ne sera prélevé sauf en cas de dommages.</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, votre dépôt de garantie a bien été autorisé. Aucun montant ne sera prélevé sauf en cas de dommages.</p>
         <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant bloqué</td><td style="font-weight:600;">${formatPrice(reservation.deposit_amount)}</td></tr>
           </table>
         </div>
@@ -413,11 +426,11 @@ const sendDepositCapturedEmail = async (user, reservation, car) => {
     html: `<div style="${baseStyle}">${header}
       <div style="padding:32px;">
         <h2 style="color:#dc2626;">Prélèvement du dépôt de garantie</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, suite à des dommages constatés sur le véhicule, votre dépôt de garantie a été prélevé.</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, suite à des dommages constatés sur le véhicule, votre dépôt de garantie a été prélevé.</p>
         <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant prélevé</td><td style="font-weight:700;color:#dc2626;">${formatPrice(reservation.deposit_amount)}</td></tr>
           </table>
         </div>
@@ -436,11 +449,11 @@ const sendDepositReleasedEmail = async (user, reservation, car) => {
       <div style="padding:32px;">
         <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">✅</span></div>
         <h2 style="color:#16a34a;text-align:center;">Dépôt de garantie libéré</h2>
-        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, aucun dommage n'ayant été constaté, votre dépôt de garantie a été entièrement libéré.</p>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${escapeHtml(user.first_name)}, aucun dommage n'ayant été constaté, votre dépôt de garantie a été entièrement libéré.</p>
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
-            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${escapeHtml(car.make)} ${escapeHtml(car.model)} ${escapeHtml(String(car.year))}</td></tr>
             <tr><td style="padding:6px 0;color:#718096;">Montant libéré</td><td style="font-weight:700;color:#16a34a;">${formatPrice(reservation.deposit_amount)}</td></tr>
           </table>
         </div>

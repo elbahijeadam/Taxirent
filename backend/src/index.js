@@ -25,7 +25,7 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.some(o => origin === o) || origin.endsWith('.vercel.app')) {
+    if (!origin || allowedOrigins.some(o => origin === o)) {
       cb(null, true);
     } else {
       cb(new Error('CORS: origin not allowed'));
@@ -48,6 +48,9 @@ app.use('/api/auth/resend-otp',   rateLimit({ windowMs: 15 * 60 * 1000, max: 5, 
 // Strict rate limit for login (brute-force protection)
 app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 5, skipSuccessfulRequests: true, message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.', code: 'RATE_LIMITED' } }));
 
+// Rate limit for forgot-password (prevent email enumeration + spam)
+app.use('/api/auth/forgot-password', rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: { error: 'Trop de demandes. Réessayez dans 1 heure.' } }));
+
 // General auth and API rate limits
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many requests, please try again later.' } }));
 app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
@@ -59,7 +62,7 @@ app.post('/api/payments/webhook',
   require('./controllers/paymentController').handleWebhook
 );
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Authenticated file serving — no public access to uploads
