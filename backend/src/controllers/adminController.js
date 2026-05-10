@@ -4,6 +4,12 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { query, pool } = require('../config/database');
 const { autoValidateDocument } = require('../services/documentVerificationService');
+const {
+  sendReservationConfirmedEmail, sendReservationActiveEmail,
+  sendReservationCompletedEmail, sendAdminCancellationEmail,
+  sendDepositCapturedEmail, sendDepositReleasedEmail,
+  sendNewPasswordEmail,
+} = require('../services/emailService');
 
 const API_BASE = process.env.API_URL || 'http://localhost:5000';
 
@@ -216,7 +222,23 @@ const updateReservationStatus = async (req, res) => {
       [status, admin_note || null, req.params.id]
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Réservation introuvable.' });
-    res.json(result.rows[0]);
+    const reservation = result.rows[0];
+
+    // Envoi email selon le nouveau statut (non-bloquant)
+    Promise.all([
+      query('SELECT * FROM users WHERE id = $1', [reservation.user_id]),
+      query('SELECT * FROM cars WHERE id = $1', [reservation.car_id]),
+    ]).then(([uRes, cRes]) => {
+      const user = uRes.rows[0];
+      const car  = cRes.rows[0];
+      if (!user || !car) return;
+      if (status === 'confirmed')  sendReservationConfirmedEmail(user, reservation, car).catch(() => {});
+      if (status === 'active')     sendReservationActiveEmail(user, reservation, car).catch(() => {});
+      if (status === 'completed')  sendReservationCompletedEmail(user, reservation, car).catch(() => {});
+      if (status === 'cancelled')  sendAdminCancellationEmail(user, reservation, car, admin_note).catch(() => {});
+    }).catch(() => {});
+
+    res.json(reservation);
   } catch (err) {
     console.error('updateReservationStatus error:', err);
     res.status(500).json({ error: 'Erreur serveur.' });
@@ -441,6 +463,14 @@ const captureDeposit = async (req, res) => {
     const { claimSwik } = require('../services/swiklyService');
     await claimSwik(reservation.deposit_swikly_id, reservation.deposit_amount);
     await query(`UPDATE reservations SET deposit_status = 'captured' WHERE id = $1`, [req.params.id]);
+    // Email dépôt capturé (non-bloquant)
+    Promise.all([
+      query(`SELECT r.*, u.email, u.first_name, u.last_name FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.id = $1`, [req.params.id]),
+      query(`SELECT * FROM cars WHERE id = (SELECT car_id FROM reservations WHERE id = $1)`, [req.params.id]),
+    ]).then(([rRes, cRes]) => {
+      const r = rRes.rows[0]; const c = cRes.rows[0];
+      if (r && c) sendDepositCapturedEmail({ email: r.email, first_name: r.first_name, last_name: r.last_name }, r, c).catch(() => {});
+    }).catch(() => {});
     res.json({ success: true });
   } catch (err) {
     console.error('captureDeposit error:', err);
@@ -464,6 +494,14 @@ const releaseDeposit = async (req, res) => {
     const { deleteSwik } = require('../services/swiklyService');
     await deleteSwik(reservation.deposit_swikly_id);
     await query(`UPDATE reservations SET deposit_status = 'released' WHERE id = $1`, [req.params.id]);
+    // Email dépôt libéré (non-bloquant)
+    Promise.all([
+      query(`SELECT r.*, u.email, u.first_name, u.last_name FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.id = $1`, [req.params.id]),
+      query(`SELECT * FROM cars WHERE id = (SELECT car_id FROM reservations WHERE id = $1)`, [req.params.id]),
+    ]).then(([rRes, cRes]) => {
+      const r = rRes.rows[0]; const c = cRes.rows[0];
+      if (r && c) sendDepositReleasedEmail({ email: r.email, first_name: r.first_name, last_name: r.last_name }, r, c).catch(() => {});
+    }).catch(() => {});
     res.json({ success: true });
   } catch (err) {
     console.error('releaseDeposit error:', err);
@@ -485,7 +523,6 @@ const resetUserPassword = async (req, res) => {
     const hash = await bcrypt.hash(tempPassword, 12);
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, user.id]);
 
-    const { sendNewPasswordEmail } = require('../services/emailService');
     sendNewPasswordEmail(user, tempPassword).catch(() => {});
 
     res.json({ success: true });

@@ -283,6 +283,183 @@ const sendNewPasswordEmail = async (user, tempPassword) => {
   }
 };
 
+const sendReservationConfirmedEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Réservation confirmée — Réf. ${refId}`,
+    type: 'reservation_confirmed', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">✅</span></div>
+        <h2 style="color:#16a34a;text-align:center;">Réservation confirmée !</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre réservation a été confirmée par notre équipe.</p>
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Prise en charge</td><td>${formatDate(reservation.start_date)}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Restitution</td><td>${formatDate(reservation.end_date)}</td></tr>
+          </table>
+        </div>
+        ${reservation.admin_note ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Note :</strong> ${reservation.admin_note}</p></div>` : ''}
+        <p style="color:#4a5568;font-size:13px;">Présentez-vous avec vos documents originaux : permis, carte professionnelle, KBIS et pièce d'identité.</p>
+        <a href="${FRONTEND_URL}/reservations/${reservation.id}" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir ma réservation</a>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendReservationActiveEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Location en cours — ${car.make} ${car.model} — Réf. ${refId}`,
+    type: 'reservation_active', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🚗</span></div>
+        <h2 style="color:#1a1a2e;text-align:center;">Votre location a démarré</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre véhicule a été pris en charge. Bonne route !</p>
+        <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} — ${car.license_plate}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Restitution prévue</td><td style="font-weight:600;">${formatDate(reservation.end_date)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#718096;font-size:13px;">En cas d'incident, contactez-nous immédiatement à taxirent.contact@gmail.com.</p>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendReservationCompletedEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Location terminée — Merci ! — Réf. ${refId}`,
+    type: 'reservation_completed', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🏁</span></div>
+        <h2 style="color:#1a1a2e;text-align:center;">Location terminée — Merci !</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre location est maintenant clôturée. Merci de votre confiance !</p>
+        <div style="background:#f7fafc;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Durée</td><td>${reservation.total_days} jour(s)</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Montant total</td><td style="font-weight:700;color:#16a34a;">${formatPrice(reservation.total_amount)}</td></tr>
+          </table>
+        </div>
+        <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Réserver à nouveau</a>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendAdminCancellationEmail = async (user, reservation, car, adminNote) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Réservation annulée — Réf. ${refId}`,
+    type: 'reservation_cancelled_admin', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <h2 style="color:#1a1a2e;">Bonjour ${user.first_name},</h2>
+        <p style="color:#4a5568;line-height:1.6;">Votre réservation a été annulée par notre équipe.</p>
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Dates prévues</td><td>${formatDate(reservation.start_date)} → ${formatDate(reservation.end_date)}</td></tr>
+          </table>
+        </div>
+        ${adminNote ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px;margin:16px 0;"><p style="margin:0;color:#854d0e;font-size:13px;"><strong>Motif :</strong> ${adminNote}</p></div>` : ''}
+        <p style="color:#718096;font-size:13px;">Pour toute question, contactez-nous à taxirent.contact@gmail.com.</p>
+        <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir les véhicules disponibles</a>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendDepositAuthorizedEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Dépôt de garantie autorisé — Réf. ${refId}`,
+    type: 'deposit_authorized', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">🔒</span></div>
+        <h2 style="color:#1a1a2e;text-align:center;">Dépôt de garantie autorisé</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, votre dépôt de garantie a bien été autorisé. Aucun montant ne sera prélevé sauf en cas de dommages.</p>
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Montant bloqué</td><td style="font-weight:600;">${formatPrice(reservation.deposit_amount)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#718096;font-size:13px;">Ce montant sera automatiquement libéré à la fin de votre location sans dommages.</p>
+        <a href="${FRONTEND_URL}/reservations/${reservation.id}" style="display:inline-block;background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Voir ma réservation</a>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendDepositCapturedEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Dépôt de garantie prélevé — Réf. ${refId}`,
+    type: 'deposit_captured', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <h2 style="color:#dc2626;">Prélèvement du dépôt de garantie</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, suite à des dommages constatés sur le véhicule, votre dépôt de garantie a été prélevé.</p>
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Montant prélevé</td><td style="font-weight:700;color:#dc2626;">${formatPrice(reservation.deposit_amount)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#718096;font-size:13px;">Pour contester ce prélèvement ou obtenir plus d'informations, contactez-nous à taxirent.contact@gmail.com.</p>
+      </div>${footer}</div>`,
+  });
+};
+
+const sendDepositReleasedEmail = async (user, reservation, car) => {
+  const refId = reservation.id.slice(0, 8).toUpperCase();
+  await sendMail({
+    to: user.email,
+    subject: `Dépôt de garantie libéré — Réf. ${refId}`,
+    type: 'deposit_released', userId: user.id, reservationId: reservation.id,
+    html: `<div style="${baseStyle}">${header}
+      <div style="padding:32px;">
+        <div style="text-align:center;margin-bottom:24px;"><span style="font-size:48px;">✅</span></div>
+        <h2 style="color:#16a34a;text-align:center;">Dépôt de garantie libéré</h2>
+        <p style="color:#4a5568;line-height:1.6;">Bonjour ${user.first_name}, aucun dommage n'ayant été constaté, votre dépôt de garantie a été entièrement libéré.</p>
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#718096;">Référence</td><td style="font-weight:700;">${refId}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Véhicule</td><td>${car.make} ${car.model} ${car.year}</td></tr>
+            <tr><td style="padding:6px 0;color:#718096;">Montant libéré</td><td style="font-weight:700;color:#16a34a;">${formatPrice(reservation.deposit_amount)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#718096;font-size:13px;">Merci pour votre confiance. À très bientôt chez Taxirent !</p>
+        <a href="${FRONTEND_URL}/cars" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">Réserver à nouveau</a>
+      </div>${footer}</div>`,
+  });
+};
+
 const SMS_READY = false;
 
-module.exports = { sendOtpEmail, sendOtpSms, sendWelcomeEmail, sendReservationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, sendPasswordResetEmail, sendNewPasswordEmail, SMS_READY };
+module.exports = {
+  sendOtpEmail, sendOtpSms, sendWelcomeEmail,
+  sendReservationEmail, sendAdminNotificationEmail,
+  sendPaymentConfirmationEmail, sendContractEmail,
+  sendCancellationEmail, sendRefundEmail,
+  sendPasswordResetEmail, sendNewPasswordEmail,
+  sendReservationConfirmedEmail, sendReservationActiveEmail,
+  sendReservationCompletedEmail, sendAdminCancellationEmail,
+  sendDepositAuthorizedEmail, sendDepositCapturedEmail, sendDepositReleasedEmail,
+  SMS_READY,
+};

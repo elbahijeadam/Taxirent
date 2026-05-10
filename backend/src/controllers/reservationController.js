@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail } = require('../services/emailService');
+const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, sendDepositAuthorizedEmail } = require('../services/emailService');
 const { generateContractHtml } = require('../services/contractService');
 const { createSwik, getSwik, deleteSwik } = require('../services/swiklyService');
 
@@ -61,7 +61,16 @@ const confirmDepositAuthorization = async (req, res) => {
       [req.params.id]
     );
     const updated = await query(`SELECT * FROM reservations WHERE id = $1`, [req.params.id]);
-    res.json(updated.rows[0]);
+    const updatedRes = updated.rows[0];
+    // Email confirmation dépôt (non-bloquant)
+    Promise.all([
+      query('SELECT * FROM users WHERE id = $1', [req.user.id]),
+      query('SELECT * FROM cars WHERE id = $1', [updatedRes.car_id]),
+    ]).then(([uRes, cRes]) => {
+      if (uRes.rows[0] && cRes.rows[0])
+        sendDepositAuthorizedEmail(uRes.rows[0], updatedRes, cRes.rows[0]).catch(() => {});
+    }).catch(() => {});
+    res.json(updatedRes);
   } catch (err) {
     console.error('confirmDepositAuthorization error:', err);
     res.status(500).json({ error: 'Erreur de confirmation du dépôt.' });
@@ -217,6 +226,7 @@ const createReservation = async (req, res) => {
 
     // Generate and send contract email (non-blocking)
     const contractHtml = generateContractHtml({ reservation: finalReservation, user, car });
+    sendReservationEmail(user, finalReservation, car).catch(() => {});
     sendContractEmail(user, finalReservation, car, contractHtml).catch(() => {});
     sendAdminNotificationEmail(user, finalReservation, car).catch(() => {});
 
