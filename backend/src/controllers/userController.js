@@ -53,12 +53,7 @@ const updateProfile = async (req, res) => {
 };
 
 const uploadDocument = async (req, res) => {
-  if (!req.user.email_verified || !req.user.phone_verified) {
-    return res.status(403).json({
-      error: 'Vérifiez votre email et votre téléphone avant de pouvoir uploader des documents.',
-      code: 'UNVERIFIED_ACCOUNT',
-    });
-  }
+
 
   const { type } = req.body;
 
