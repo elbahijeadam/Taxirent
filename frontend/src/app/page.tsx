@@ -91,17 +91,17 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 text-sm font-semibold px-4 py-2 rounded-full mb-8 border border-brand-500/25 tracking-wide">
+            <span className="inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 text-sm font-semibold px-4 py-2 rounded-full mb-8 border border-brand-500/25 tracking-wide animate-fade-in">
               ✦ Île-de-France · Véhicules homologués taxi
             </span>
-            <h1 className="text-5xl lg:text-7xl font-extrabold leading-[1.08] mb-7 tracking-tight">
+            <h1 className="text-5xl lg:text-7xl font-extrabold leading-[1.08] mb-7 tracking-tight animate-fade-in-up [animation-delay:120ms]">
               Votre taxi en panne ?<br />
               <span className="text-brand-500">Reprenez la route.</span>
             </h1>
-            <p className="text-lg lg:text-xl text-gray-400 mb-10 leading-relaxed max-w-xl">
+            <p className="text-lg lg:text-xl text-gray-400 mb-10 leading-relaxed max-w-xl animate-fade-in-up [animation-delay:240ms]">
               Taxirent met à disposition des véhicules relais équipés pour les chauffeurs de taxi en Île-de-France. Réservation 100 % en ligne, contrat généré automatiquement.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 animate-fade-in-up [animation-delay:360ms]">
               <Link href="/auth/register" className="btn-primary text-base px-8 py-4 rounded-2xl shadow-lg shadow-brand-500/25">
                 Démarrer gratuitement <ArrowRight className="w-5 h-5" />
               </Link>
@@ -109,7 +109,7 @@ export default function HomePage() {
                 Voir les véhicules
               </Link>
             </div>
-            <p className="mt-5 text-xs text-gray-600">
+            <p className="mt-5 text-xs text-gray-600 animate-fade-in [animation-delay:480ms]">
               Sans engagement &nbsp;·&nbsp; Conforme RGPD &nbsp;·&nbsp; Droit français applicable
             </p>
           </div>
@@ -118,9 +118,9 @@ export default function HomePage() {
         {/* Stats bar */}
         <div className="relative border-t border-white/8 bg-white/4 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 stagger-grid">
               {STATS.map((s) => (
-                <div key={s.label} className="text-center py-1">
+                <div key={s.label} className="text-center py-1 animate-fade-in-up">
                   <p className="text-2xl lg:text-3xl font-extrabold text-brand-500 tabular-nums">{s.value}</p>
                   <p className="text-gray-500 text-xs mt-1 leading-snug">{s.label}</p>
                 </div>
@@ -159,9 +159,9 @@ export default function HomePage() {
             Un véhicule immobilisé, c'est une journée de revenus perdue. Taxirent vous propose un relais homologué taxi, disponible en Île-de-France, réservable en ligne en quelques minutes.
           </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 stagger-grid">
           {USE_CASES.map(({ title, desc }) => (
-            <div key={title} className="card p-8 border-l-2 border-brand-500">
+            <div key={title} className="card p-8 border-l-2 border-brand-500 animate-fade-in-up">
               <h3 className="font-bold text-gray-900 text-lg mb-3">{title}</h3>
               <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
             </div>
@@ -204,9 +204,9 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold mt-3">Ce que Taxirent fait pour vous</h2>
             <p className="text-gray-400 mt-3 text-lg max-w-lg mx-auto">Une plateforme pensée pour simplifier chaque étape, de la constitution du dossier à la restitution du véhicule.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-grid">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="group p-7 rounded-2xl bg-white/4 hover:bg-white/8 border border-white/6 hover:border-brand-500/30 transition-all duration-300">
+              <div key={title} className="group p-7 rounded-2xl bg-white/4 hover:bg-white/8 border border-white/6 hover:border-brand-500/30 transition-all duration-300 animate-fade-in-up">
                 <div className="w-12 h-12 bg-brand-500/15 rounded-xl flex items-center justify-center mb-5 group-hover:bg-brand-500 transition-colors duration-300">
                   <Icon className="w-6 h-6 text-brand-400 group-hover:text-white transition-colors duration-300" />
                 </div>
@@ -225,12 +225,12 @@ export default function HomePage() {
           <h2 className="text-4xl font-bold text-gray-900 mt-3">Un véhicule pour chaque mission</h2>
           <p className="text-gray-500 mt-3 text-lg">Berlines, SUV, hybrides et électriques disponibles en Île-de-France.</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-grid">
           {CATEGORIES.map((c) => (
             <Link
               key={c.name}
               href={c.href}
-              className="card group p-8 text-center hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 hover:border-brand-500/30"
+              className="card group p-8 text-center hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 hover:border-brand-500/30 animate-fade-in-up"
             >
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">{c.emoji}</div>
               <h3 className="font-bold text-gray-900 text-base mb-1">{c.name}</h3>
@@ -247,7 +247,7 @@ export default function HomePage() {
 
       {/* ── CTA ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl px-8 py-16 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl px-8 py-16 text-white animate-scale-in">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 70% 30%, white 0%, transparent 50%)' }} />
           <div className="relative flex flex-col lg:flex-row items-center gap-12">
             <div className="flex-1 text-center lg:text-left">

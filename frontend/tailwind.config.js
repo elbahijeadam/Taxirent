@@ -23,6 +23,12 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      animation: {
+        'fade-in':      'fadeIn 0.6s ease-out both',
+        'fade-in-up':   'fadeInUp 0.55s ease-out both',
+        'fade-in-down': 'fadeInDown 0.45s ease-out both',
+        'scale-in':     'scaleIn 0.4s ease-out both',
+      },
     },
   },
   plugins: [],

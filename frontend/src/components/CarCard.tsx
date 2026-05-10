@@ -34,7 +34,7 @@ export default function CarCard({ car }: { car: Car }) {
   return (
     <Link
       href={`/cars/${car.id}`}
-      className="card group block hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+      className="card group block hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden animate-fade-in-up"
     >
       {/* Image / Placeholder */}
       <div

@@ -56,8 +56,8 @@ export default function CarsPage() {
       {/* Header */}
       <div className="bg-dark-900 text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold mb-3">Notre flotte</h1>
-          <p className="text-gray-400 text-lg">{cars.length} véhicule{cars.length !== 1 ? 's' : ''} disponible{cars.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-4xl font-extrabold mb-3 animate-fade-in-down">Notre flotte</h1>
+          <p className="text-gray-400 text-lg animate-fade-in [animation-delay:150ms]">{cars.length} véhicule{cars.length !== 1 ? 's' : ''} disponible{cars.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ export default function CarsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-grid">
             {cars.map((car) => <CarCard key={car.id} car={car} />)}
           </div>
         )}
