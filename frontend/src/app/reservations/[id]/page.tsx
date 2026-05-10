@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Calendar, Car, MapPin, FileText, Loader2, CheckCircle, XCircle, AlertTriangle, Download, Clock, Shield, Lock, ExternalLink } from 'lucide-react';
 import { reservationApi, paymentApi } from '@/lib/api';
 import { Reservation } from '@/types';
@@ -22,10 +22,51 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 
 
 // Stripe payment form component
-function PaymentForm({ onSuccess, reservationId }: { onSuccess: () => void; reservationId: string }) {
+function PaymentForm({ onSuccess, reservationId, amountCents, clientSecret }: {
+  onSuccess: () => void;
+  reservationId: string;
+  amountCents: number;
+  clientSecret: string;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [paymentRequest, setPaymentRequest] = useState<any>(null);
+
+  useEffect(() => {
+    if (!stripe || !amountCents) return;
+    const pr = stripe.paymentRequest({
+      country: 'FR',
+      currency: 'eur',
+      total: { label: 'Taxirent — Location véhicule', amount: amountCents },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+    pr.canMakePayment().then((result: any) => {
+      if (result) setPaymentRequest(pr);
+    });
+    pr.on('paymentmethod', async (ev: any) => {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: ev.paymentMethod.id },
+        { handleActions: false }
+      );
+      if (error) {
+        ev.complete('fail');
+        toast.error(error.message || 'Paiement échoué');
+        return;
+      }
+      ev.complete('success');
+      if (paymentIntent.status === 'requires_action') {
+        const { error: err2 } = await stripe.confirmCardPayment(clientSecret);
+        if (err2) { toast.error(err2.message || 'Authentification échouée'); }
+        else { toast.success('Paiement réussi !'); onSuccess(); }
+      } else {
+        toast.success('Paiement réussi !');
+        onSuccess();
+      }
+    });
+  }, [stripe, amountCents, clientSecret]);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +95,24 @@ function PaymentForm({ onSuccess, reservationId }: { onSuccess: () => void; rese
 
   return (
     <form onSubmit={handlePay} className="space-y-5">
+      {paymentRequest && (
+        <>
+          <PaymentRequestButtonElement
+            options={{
+              paymentRequest,
+              style: { paymentRequestButton: { theme: 'dark', height: '52px', type: 'default' } },
+            }}
+          />
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 border-t border-gray-200" />
+            <span className="text-xs text-gray-400 whitespace-nowrap">ou payer par carte</span>
+            <div className="flex-1 border-t border-gray-200" />
+          </div>
+        </>
+      )}
       <PaymentElement />
       <button type="submit" disabled={loading || !stripe} className="btn-primary w-full py-4 text-base rounded-xl">
-        {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Traitement...</> : 'Payer maintenant'}
+        {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Traitement...</> : 'Payer par carte'}
       </button>
     </form>
   );
@@ -68,6 +124,7 @@ export default function ReservationDetailPage() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentAmountCents, setPaymentAmountCents] = useState<number>(0);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [loadingDeposit, setLoadingDeposit] = useState(false);
@@ -115,6 +172,7 @@ export default function ReservationDetailPage() {
     try {
       const res = await paymentApi.createIntent({ reservation_id: reservation.id, payment_type: paymentType });
       setClientSecret(res.data.clientSecret);
+      setPaymentAmountCents(res.data.amount);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Erreur de paiement');
     } finally {
@@ -286,7 +344,7 @@ export default function ReservationDetailPage() {
                 <h2 className="font-bold text-gray-900 mb-5 text-xl">Paiement</h2>
                 {clientSecret ? (
                   <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <PaymentForm onSuccess={() => window.location.reload()} reservationId={id} />
+                    <PaymentForm onSuccess={() => window.location.reload()} reservationId={id} amountCents={paymentAmountCents} clientSecret={clientSecret} />
                   </Elements>
                 ) : (
                   <div className="space-y-4">
