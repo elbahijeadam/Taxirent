@@ -34,6 +34,9 @@ const createPaymentIntent = async (req, res) => {
       amount: amountCents,
       currency: 'eur',
       metadata: { reservation_id, user_id: req.user.id, payment_type },
+      payment_method_options: {
+        card: { request_three_d_secure: 'automatic' },
+      },
     });
 
     // Save payment record

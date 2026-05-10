@@ -22,7 +22,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
 
 
 // Stripe payment form component
-function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
+function PaymentForm({ onSuccess, reservationId }: { onSuccess: () => void; reservationId: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,9 @@ function PaymentForm({ onSuccess }: { onSuccess: () => void }) {
     try {
       const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: window.location.href + '?payment=success' },
+        confirmParams: {
+          return_url: `${window.location.origin}/reservations/${reservationId}`,
+        },
         redirect: 'if_required',
       });
       if (error) {
@@ -76,6 +78,21 @@ export default function ReservationDetailPage() {
       .then((res) => setReservation(res.data))
       .catch(() => toast.error('Réservation introuvable'))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  // Handle Stripe 3DS redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get('redirect_status');
+    if (redirectStatus) {
+      window.history.replaceState({}, '', `/reservations/${id}`);
+      if (redirectStatus === 'succeeded') {
+        toast.success('Paiement réussi !');
+        reservationApi.get(id).then((res) => setReservation(res.data)).catch(() => {});
+      } else {
+        toast.error('Le paiement a échoué. Veuillez réessayer.');
+      }
+    }
   }, [id]);
 
   // Auto-confirm deposit when returning from Swikly
@@ -269,7 +286,7 @@ export default function ReservationDetailPage() {
                 <h2 className="font-bold text-gray-900 mb-5 text-xl">Paiement</h2>
                 {clientSecret ? (
                   <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <PaymentForm onSuccess={() => window.location.reload()} />
+                    <PaymentForm onSuccess={() => window.location.reload()} reservationId={id} />
                   </Elements>
                 ) : (
                   <div className="space-y-4">
