@@ -15,12 +15,14 @@ const REASON_LABELS: Record<string, { label: string; icon: string }> = {
   engine_failure: { label: 'Panne moteur', icon: '🔧' },
   accident: { label: 'Accident de la route', icon: '🚨' },
   body_damage: { label: 'Dommages carrosserie', icon: '🔨' },
+  other: { label: 'Autre', icon: '📝' },
 };
 
 const REASON_TEXT: Record<string, string> = {
   engine_failure: 'Panne moteur',
   accident: 'Accident de la route',
   body_damage: 'Dommages carrosserie',
+  other: 'Autre',
 };
 
 function fmt(d: string | undefined) {

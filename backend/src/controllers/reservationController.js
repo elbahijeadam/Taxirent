@@ -82,7 +82,7 @@ const confirmDepositAuthorization = async (req, res) => {
   }
 };
 
-const VALID_REASONS = ['engine_failure', 'accident', 'body_damage'];
+const VALID_REASONS = ['engine_failure', 'accident', 'body_damage', 'other'];
 const REQUIRED_DOC_TYPES = ['driver_license_front', 'kbis', 'vehicle_registration'];
 const DEPOSIT_AMOUNT_EUR = 1500;
 

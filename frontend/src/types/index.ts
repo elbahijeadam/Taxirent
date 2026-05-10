@@ -87,7 +87,7 @@ export interface Reservation {
   dropoff_location?: string;
   pickup_time?: string;
   return_time?: string;
-  reason?: 'engine_failure' | 'accident' | 'body_damage';
+  reason?: 'engine_failure' | 'accident' | 'body_damage' | 'other';
   vehicle_location?: string;
   total_days: number;
   price_per_day: number;

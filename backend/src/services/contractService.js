@@ -12,6 +12,7 @@ const REASON_LABELS = {
   engine_failure: 'Panne moteur',
   accident:       'Accident de la route',
   body_damage:    'Dommages carrosserie',
+  other:          'Autre',
 };
 
 const field = (label, value) => `
@@ -21,8 +22,10 @@ const field = (label, value) => `
   </tr>`;
 
 function generateContractHtml({ reservation, user, car }) {
-  const reason        = REASON_LABELS[reservation.reason] || reservation.reason || '___________';
-  const lieuCause     = [reservation.vehicle_location, reason].filter(Boolean).join(' – ');
+  const reasonLabel   = reservation.reason === 'other'
+    ? (reservation.notes ? reservation.notes.split('\n\n')[0] : 'Autre')
+    : (REASON_LABELS[reservation.reason] || reservation.reason || '___________');
+  const lieuCause     = [reservation.vehicle_location, reasonLabel].filter(Boolean).join(' – ');
   const depositAmount = parseFloat(reservation.deposit_amount || 1000);
 
   return `<!DOCTYPE html>
@@ -331,7 +334,9 @@ async function downloadPdf() {
 function generateContractPdf({ reservation, user, car }) {
   const doc = new PDFDocument({ margin: 50, size: 'A4' });
   const depositAmount = parseFloat(reservation.deposit_amount || 1000);
-  const reason = REASON_LABELS[reservation.reason] || reservation.reason || '';
+  const reason = reservation.reason === 'other'
+    ? (reservation.notes ? reservation.notes.split('\n\n')[0] : 'Autre')
+    : (REASON_LABELS[reservation.reason] || reservation.reason || '');
   const lieuCause = [reservation.vehicle_location, reason].filter(Boolean).join(' – ');
   const pricePerDay = parseFloat(car.price_per_day || 0).toFixed(0);
 

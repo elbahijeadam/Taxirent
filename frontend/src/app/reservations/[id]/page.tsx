@@ -279,8 +279,11 @@ export default function ReservationDetailPage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                     <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Raison</p>
                     <p className="font-semibold text-amber-900">
-                      {{ engine_failure: '🔧 Panne moteur', accident: '🚨 Accident de la route', body_damage: '🔨 Dommages carrosserie' }[reservation.reason] || reservation.reason}
+                      {{ engine_failure: '🔧 Panne moteur', accident: '🚨 Accident de la route', body_damage: '🔨 Dommages carrosserie', other: '📝 Autre' }[reservation.reason!] || reservation.reason}
                     </p>
+                    {reservation.reason === 'other' && reservation.notes && (
+                      <p className="text-sm text-amber-800 mt-1">{reservation.notes.split('\n\n')[0]}</p>
+                    )}
                   </div>
                 )}
                 {reservation.vehicle_location && (

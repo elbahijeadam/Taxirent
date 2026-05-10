@@ -15,9 +15,10 @@ const FUEL_LABELS: Record<string, string> = { petrol: 'Essence', diesel: 'Diesel
 const TRANS_LABELS: Record<string, string> = { automatic: 'Automatique', manual: 'Manuelle' };
 
 const REASONS = [
-  { value: 'engine_failure', label: 'Panne moteur', icon: '🔧' },
-  { value: 'accident', label: 'Accident de la route', icon: '🚨' },
-  { value: 'body_damage', label: 'Dommages carrosserie', icon: '🔨' },
+  { value: 'engine_failure', label: 'Panne moteur',           icon: '🔧' },
+  { value: 'accident',       label: 'Accident de la route',   icon: '🚨' },
+  { value: 'body_damage',    label: 'Dommages carrosserie',   icon: '🔨' },
+  { value: 'other',          label: 'Autre (à préciser)',     icon: '📝' },
 ];
 
 export default function CarDetailPage() {
@@ -32,6 +33,7 @@ export default function CarDetailPage() {
 
   // B2B fields
   const [reason, setReason] = useState('');
+  const [otherReason, setOtherReason] = useState('');
   const [vehicleLocation, setVehicleLocation] = useState('');
   const [immobilizedPlate, setImmobilizedPlate] = useState('');
   const [pickupTime, setPickupTime] = useState('09:00');
@@ -71,6 +73,7 @@ export default function CarDetailPage() {
     }
     if (!range?.from || !range?.to) { toast.error('Sélectionnez les dates de location'); return; }
     if (!reason) { toast.error('Veuillez indiquer le motif de location'); return; }
+    if (reason === 'other' && !otherReason.trim()) { toast.error('Veuillez préciser le motif'); return; }
     if (!vehicleLocation.trim()) { toast.error('Veuillez indiquer la localisation du véhicule immobilisé'); return; }
     if (!immobilizedPlate.trim()) { toast.error('Veuillez indiquer la plaque du véhicule immobilisé'); return; }
 
@@ -85,7 +88,9 @@ export default function CarDetailPage() {
         reason,
         vehicle_location: vehicleLocation.trim(),
         immobilized_plate: immobilizedPlate.trim().toUpperCase(),
-        notes: notes || undefined,
+        notes: reason === 'other'
+          ? (otherReason.trim() + (notes.trim() ? '\n\n' + notes.trim() : ''))
+          : (notes || undefined),
       });
       toast.success('Demande enregistrée ! Votre contrat a été envoyé par email.');
       router.push(`/reservations/${res.data.id}`);
@@ -228,6 +233,21 @@ export default function CarDetailPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Other reason text input */}
+              {reason === 'other' && (
+                <div>
+                  <label className="label text-xs">Précisez le motif <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                    className="input py-2 text-sm"
+                    placeholder="Décrivez le motif d'immobilisation..."
+                    maxLength={200}
+                  />
+                </div>
+              )}
 
               {/* Vehicle location */}
               <div>

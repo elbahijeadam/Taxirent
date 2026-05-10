@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
 import { Car } from '@/types';
+import { formatPrice } from '@/lib/auth';
 
 const CATEGORY_LABELS: Record<string, string> = {
   economy: 'Économique', compact: 'Compacte', midsize: 'Intermédiaire',
@@ -78,14 +78,15 @@ export default function CarCard({ car }: { car: Car }) {
           {car.make} {car.model}
         </h3>
         <p className="text-gray-400 text-sm mt-1">{car.year}</p>
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-4 flex items-end justify-between">
+          <div>
+            <span className="text-2xl font-extrabold text-brand-500">{formatPrice(car.price_per_day)}</span>
+            <span className="text-gray-400 text-xs ml-1">/ jour</span>
+          </div>
           {car.is_available ? (
-            <>
-              <span className="text-sm font-medium text-brand-500">Voir le véhicule</span>
-              <span className="text-brand-500 group-hover:translate-x-1 transition-transform inline-block">→</span>
-            </>
+            <span className="text-brand-500 group-hover:translate-x-1 transition-transform inline-block text-lg">→</span>
           ) : (
-            <span className="text-sm font-semibold text-red-500">Momentanément indisponible</span>
+            <span className="text-xs font-semibold text-red-500">Indisponible</span>
           )}
         </div>
       </div>
