@@ -1,5 +1,7 @@
 'use strict';
 
+const PDFDocument = require('pdfkit');
+
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '___________';
 
@@ -326,4 +328,113 @@ async function downloadPdf() {
 </html>`;
 }
 
-module.exports = { generateContractHtml };
+function generateContractPdf({ reservation, user, car }) {
+  const doc = new PDFDocument({ margin: 50, size: 'A4' });
+  const depositAmount = parseFloat(reservation.deposit_amount || 1000);
+  const reason = REASON_LABELS[reservation.reason] || reservation.reason || '';
+  const lieuCause = [reservation.vehicle_location, reason].filter(Boolean).join(' – ');
+  const pricePerDay = parseFloat(car.price_per_day || 0).toFixed(0);
+
+  const separator = () => {
+    doc.moveDown(0.4);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).lineWidth(0.5).strokeColor('#aaaaaa').stroke().strokeColor('#000000');
+    doc.moveDown(0.5);
+  };
+
+  const fieldRow = (label, value) => {
+    const y = doc.y;
+    doc.font('Helvetica-Bold').fontSize(9).text(label + ' :', 50, y, { width: 250, lineBreak: true });
+    const afterLabel = doc.y;
+    doc.font('Helvetica').fontSize(9).text(value || '', 310, y, { width: 235, lineBreak: true });
+    const afterValue = doc.y;
+    const endY = Math.max(afterLabel, afterValue);
+    doc.moveTo(310, endY).lineTo(545, endY).lineWidth(0.4).strokeColor('#bbbbbb').stroke().strokeColor('#000000');
+    doc.y = endY + 5;
+  };
+
+  // ── En-tête ──
+  doc.font('Helvetica-Bold').fontSize(15).text('CONTRAT DE LOCATION TAXI RELAIS', { align: 'center' });
+  doc.moveDown(0.4);
+  doc.font('Helvetica').fontSize(9)
+     .text("TAXI RENT  –  7 Allée de Lille  –  91170 Viry-Châtillon", { align: 'center' })
+     .text("Enregistré au RCS d'Évry  –  SIREN 921 300 190  –  Location de véhicule courte durée", { align: 'center' });
+  doc.moveDown(0.6);
+  doc.moveTo(50, doc.y).lineTo(545, doc.y).lineWidth(1).stroke();
+  doc.moveDown(0.5);
+
+  // ── Conditions ──
+  const paras = [
+    { bold: false, text: "Le loueur met à disposition du locataire un véhicule équipé taxi en conformité avec la réglementation en vigueur : taximètre, lumineux, imprimante, et contrôles techniques à jour. Le véhicule est assuré par le locataire (transfert de son assurance tous risques de son taxi immobilisé), il devra immédiatement signaler tout incident à son assurance et au loueur." },
+    { bold: false, text: `Au départ de la location le locataire devra laisser un chèque de caution de ${depositAmount.toLocaleString('fr-FR')} €.` },
+    { bold: false, text: "Le véhicule devra être restitué dans l'état où il a été emprunté et dans le cas contraire le loueur pourra facturer les frais de remise en état du véhicule ainsi que les jours d'immobilisation du véhicule relais le cas échéant. (Frais de nettoyage forfaitaire 50 €)" },
+    { bold: false, text: "Le véhicule relais devra toujours être restitué plein fait et dans le cas contraire il sera facturé au locataire 2 €/litre manquant." },
+    { bold: false, text: "Le véhicule relais est loué uniquement en cas d'immobilisation du véhicule taxi du locataire." },
+    { bold: false, text: "Le locataire devra indiquer au loueur les raisons de l'immobilisation de son véhicule ainsi que le lieu où celui-ci est visible. En cas de contrôle ou de demandes des autorités et administrations compétentes, le loueur se réserve la possibilité de vérifier où le véhicule du locataire est immobilisé." },
+    { bold: false, text: "Le locataire doit transmettre le contrat de location à la Mairie de la Commune de Stationnement." },
+    { bold: false, text: "La location s'entend kilométrage illimité." },
+    { bold: true,  text: "LE LOCATAIRE S'ENGAGE À ALLER MODIFIER LES TARIFS PRÉFECTORAUX DE SON DÉPARTEMENT CHEZ JPM TAXI." },
+  ];
+
+  paras.forEach((p) => {
+    doc.font(p.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(9).text(p.text);
+    doc.moveDown(0.35);
+  });
+
+  separator();
+
+  // ── Véhicule ──
+  doc.font('Helvetica-Bold').fontSize(10).text('VÉHICULE LOUÉ', { underline: true });
+  doc.moveDown(0.4);
+  fieldRow('Véhicule', `${car.make} ${car.model}`);
+  fieldRow('Immatriculation', car.license_plate);
+  fieldRow('Prix par jour', `${pricePerDay} € HT`);
+  fieldRow('Date de début de contrat', fmt(reservation.start_date));
+  fieldRow('Date prévue de retour', fmt(reservation.end_date));
+  doc.moveDown(0.4);
+
+  // ── Locataire ──
+  doc.font('Helvetica-Bold').fontSize(10).text('LOCATAIRE', { underline: true });
+  doc.moveDown(0.4);
+  fieldRow('Nom', `${user.first_name} ${user.last_name}`);
+  fieldRow('Adresse', user.address || user.commune || '');
+  fieldRow('Permis de conduire N°', user.driver_license_number || '');
+  fieldRow('Délivré le', user.driver_license_date ? fmt(user.driver_license_date) : '');
+  fieldRow('Carte professionnelle N°', user.professional_card_number || '');
+  fieldRow('Commune de stationnement du véhicule immobilisé', user.commune || '');
+  fieldRow('Immatriculation du véhicule immobilisé', reservation.immobilized_plate || '');
+  fieldRow('Numéro de conventionnement', user.license_number || '');
+  fieldRow("Lieu d'immobilisation et cause", lieuCause);
+  doc.moveDown(0.5);
+
+  doc.font('Helvetica-Bold').fontSize(9).text('TOUS DOMMAGES SONT À REMBOURSER PAR LE LOCATAIRE');
+  doc.moveDown(1.2);
+
+  // ── Signatures ──
+  separator();
+  const sigY = doc.y;
+
+  doc.font('Helvetica').fontSize(9).text('Signature locataire', 50, sigY, { width: 200, align: 'center' });
+  doc.moveTo(50, sigY + 55).lineTo(250, sigY + 55).lineWidth(0.6).stroke();
+  doc.font('Helvetica').fontSize(8).text('Date et signature', 50, sigY + 58, { width: 200, align: 'center' });
+
+  doc.font('Helvetica').fontSize(9).text('Signature loueur', 320, sigY, { width: 200, align: 'center' });
+  doc.moveTo(320, sigY + 55).lineTo(520, sigY + 55).lineWidth(0.6).stroke();
+  doc.font('Helvetica').fontSize(8).text('Monir El Bahije', 320, sigY + 58, { width: 200, align: 'center' });
+
+  doc.y = sigY + 80;
+
+  // ── Retour ──
+  separator();
+  doc.font('Helvetica-Bold').fontSize(9).text('RETOUR DU VÉHICULE');
+  doc.moveDown(0.5);
+  ['Retour véhicule', 'Sinistre responsable', 'Carburant'].forEach((label) => {
+    const y = doc.y;
+    doc.font('Helvetica').fontSize(9).text(`${label} :`, 50, y);
+    doc.moveTo(170, y + 11).lineTo(545, y + 11).lineWidth(0.4).strokeColor('#bbbbbb').stroke().strokeColor('#000000');
+    doc.moveDown(0.9);
+  });
+
+  return doc;
+}
+
+module.exports = { generateContractHtml, generateContractPdf };

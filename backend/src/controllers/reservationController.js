@@ -1,6 +1,6 @@
 const { query } = require('../config/database');
 const { sendReservationEmail, sendAdminNotificationEmail, sendContractEmail, sendCancellationEmail, sendRefundEmail, sendDepositAuthorizedEmail } = require('../services/emailService');
-const { generateContractHtml } = require('../services/contractService');
+const { generateContractHtml, generateContractPdf } = require('../services/contractService');
 const { createSwik, getSwik, deleteSwik } = require('../services/swiklyService');
 
 // Return the Swikly acceptUrl so the user can authorize the deposit hold
@@ -272,13 +272,16 @@ const getContract = async (req, res) => {
       make: row.make, model: row.model, year: row.year, color: row.color,
       license_plate: row.license_plate, transmission: row.transmission,
       fuel_type: row.fuel_type, category: row.category,
-      price_per_day: row.price_per_day,
+      price_per_day: row.car_price_per_day,
     };
 
-    const contractHtml = generateContractHtml({ reservation: row, user, car });
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `inline; filename="contrat-${req.params.id.slice(0,8)}.html"`);
-    res.send(contractHtml);
+    const refId = req.params.id.slice(0, 8).toUpperCase();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="contrat-taxirent-${refId}.pdf"`);
+
+    const doc = generateContractPdf({ reservation: row, user, car });
+    doc.pipe(res);
+    doc.end();
   } catch (err) {
     console.error('Get contract error:', err);
     res.status(500).json({ error: 'Impossible de générer le contrat.' });

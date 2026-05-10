@@ -297,11 +297,10 @@ export default function ReservationDetailPage() {
               <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><FileText className="w-5 h-5 text-brand-500" /> Contrat de location</h2>
               <a
                 href={reservationApi.getContractUrl(id)}
-                target="_blank"
-                rel="noopener noreferrer"
+                download
                 className="inline-flex items-center gap-2 bg-dark-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-dark-800 transition"
               >
-                <Download className="w-4 h-4" /> Télécharger le contrat
+                <Download className="w-4 h-4" /> Télécharger le contrat PDF
               </a>
             </div>
 
